@@ -2,12 +2,13 @@
 Cyclone Atlas — Data Loader and Historical Preprocessor
 =======================================================
 Implements cached, memory-efficient data loading for the processed Parquet
-datasets, cyclone track indexing, and chronological trajectory extraction.
+datasets, cyclone track indexing, physical observation deduplication, and
+horizon-specific prediction sample extraction.
 """
 
 import os
 import sys
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple, Union
 import pandas as pd
 import numpy as np
 import streamlit as st
@@ -99,8 +100,12 @@ def get_global_summary_stats() -> Dict[str, Any]:
 
     total_storms = int(dedup_mov['SID'].nunique())
     total_obs = int(len(dedup_mov))
-    season_min = int(dedup_mov['SEASON'].min())
-    season_max = int(dedup_mov['SEASON'].max())
+    
+    # Model 2 covers 1970–present; Model 1 covers 1980–present
+    mov_season_min = int(df_mov['SEASON'].min())
+    mov_season_max = int(df_mov['SEASON'].max())
+    int_season_min = int(df_int['SEASON'].min())
+    int_season_max = int(df_int['SEASON'].max())
 
     basin_counts = dedup_mov['BASIN'].value_counts().to_dict()
     split_counts = dedup_mov['SPLIT'].value_counts().to_dict()
@@ -112,7 +117,9 @@ def get_global_summary_stats() -> Dict[str, Any]:
     return {
         'total_storms': total_storms,
         'total_observations': total_obs,
-        'season_range': f"{season_min} – {season_max}",
+        'season_range': f"{mov_season_min} – {mov_season_max}",
+        'movement_season_range': f"{mov_season_min} – {mov_season_max}",
+        'intensity_season_range': f"{int_season_min} – {int_season_max}",
         'basin_distribution': basin_counts,
         'split_distribution': split_counts,
         'max_wind_kts': max_wind_observed,
@@ -123,7 +130,7 @@ def get_global_summary_stats() -> Dict[str, Any]:
 @st.cache_data(show_spinner=False)
 def get_cyclone_catalog(dataset_type: str = 'movement') -> pd.DataFrame:
     """
-    Builds a catalog of unique cyclones with season, basin, observation counts,
+    Builds a catalog of unique cyclones with season, basin, physical observation counts,
     and temporal span for fast user selection.
     """
     if dataset_type == 'intensity':
@@ -169,8 +176,11 @@ def get_cyclone_catalog(dataset_type: str = 'movement') -> pd.DataFrame:
     return catalog
 
 
-def get_observations_for_cyclone(sid: str, dataset_type: str = 'movement') -> pd.DataFrame:
-    """Returns chronological observations for an SID from the specified dataset."""
+def get_physical_track_observations(sid: str, dataset_type: str = 'movement') -> pd.DataFrame:
+    """
+    Returns strictly unique physical track observations for an SID from the specified dataset,
+    sorted chronologically by ISO_TIME. Exactly one record per (SID, ISO_TIME).
+    """
     if dataset_type == 'intensity':
         df = load_intensity_dataset()
     elif dataset_type == 'development':
@@ -180,4 +190,90 @@ def get_observations_for_cyclone(sid: str, dataset_type: str = 'movement') -> pd
 
     cyclone_df = df[df['SID'] == sid].copy()
     cyclone_df['ISO_TIME'] = pd.to_datetime(cyclone_df['ISO_TIME'])
-    return cyclone_df.sort_values('ISO_TIME')
+
+    # Deduplicate by (SID, ISO_TIME) to isolate physical track observations
+    physical_df = cyclone_df.drop_duplicates(subset=['SID', 'ISO_TIME']).sort_values('ISO_TIME').reset_index(drop=True)
+
+    # Validate that no duplicate (SID, ISO_TIME) records exist
+    assert not physical_df.duplicated(subset=['SID', 'ISO_TIME']).any(), (
+        f"Duplicate (SID, ISO_TIME) physical observation sequence detected for SID: {sid}"
+    )
+    return physical_df
+
+
+def get_observations_for_cyclone(sid: str, dataset_type: str = 'movement') -> pd.DataFrame:
+    """
+    Convenience wrapper returning unique physical track observations for an SID.
+    Guarantees no repeated horizon-expanded samples.
+    """
+    return get_physical_track_observations(sid, dataset_type=dataset_type)
+
+
+def get_horizon_targets_for_observation(
+    sid: str,
+    iso_time: Any,
+    dataset_type: str = 'intensity'
+) -> Dict[int, Dict[str, Any]]:
+    """
+    Retrieves the actual future ground-truth target samples for each horizon (+6h, +12h, +24h)
+    corresponding to a specific physical observation (SID, ISO_TIME).
+    
+    Returns:
+        Dict mapping horizon (int: 6, 12, 24) to a dictionary of target fields.
+        If a horizon target is unavailable (e.g. beyond storm lifecycle), it is omitted.
+    """
+    if dataset_type == 'intensity':
+        df = load_intensity_dataset()
+    elif dataset_type == 'development':
+        df = load_development_dataset()
+    else:
+        df = load_movement_dataset()
+
+    target_time = pd.to_datetime(iso_time)
+
+    # Match exact physical observation
+    matches = df[(df['SID'] == sid) & (pd.to_datetime(df['ISO_TIME']) == target_time)]
+    targets_by_horizon = {}
+    if matches.empty:
+        return targets_by_horizon
+
+    if dataset_type == 'intensity':
+        for _, row in matches.iterrows():
+            if 'PRED_HORIZON_HOURS' in row and pd.notna(row['PRED_HORIZON_HOURS']):
+                h = int(row['PRED_HORIZON_HOURS'])
+                target_w = row.get('TARGET_USA_WIND', None)
+                if pd.notna(target_w):
+                    targets_by_horizon[h] = {
+                        'target_wind_kts': float(target_w),
+                        'target_wind_kmh': round(float(target_w) * 1.852, 1),
+                        'horizon_hours': h
+                    }
+    elif dataset_type == 'movement':
+        for _, row in matches.iterrows():
+            if 'PRED_HORIZON_HOURS' in row and pd.notna(row['PRED_HORIZON_HOURS']):
+                h = int(row['PRED_HORIZON_HOURS'])
+                t_lat = row.get('TARGET_LAT', None)
+                t_lon = row.get('TARGET_LON_NORM', row.get('TARGET_LON', None))
+                dx = row.get('TARGET_EAST_DISPLACEMENT_KM', None)
+                dy = row.get('TARGET_NORTH_DISPLACEMENT_KM', None)
+                hav_d = row.get('TARGET_HAVERSINE_DISTANCE_KM', None)
+
+                if pd.notna(t_lat) and pd.notna(t_lon):
+                    targets_by_horizon[h] = {
+                        'target_lat': float(t_lat),
+                        'target_lon': float(t_lon),
+                        'target_dx_km': float(dx) if pd.notna(dx) else None,
+                        'target_dy_km': float(dy) if pd.notna(dy) else None,
+                        'target_haversine_distance_km': float(hav_d) if pd.notna(hav_d) else None,
+                        'horizon_hours': h
+                    }
+    elif dataset_type == 'development':
+        row = matches.iloc[0]
+        targets_by_horizon[24] = {
+            'target_class': row.get('CLASS_LABEL', None),
+            'target_wind_change_24h': row.get('WIND_CHANGE_24H', None),
+            'target_wind_24h': row.get('TARGET_USA_WIND_24H', None),
+            'horizon_hours': 24
+        }
+
+    return targets_by_horizon

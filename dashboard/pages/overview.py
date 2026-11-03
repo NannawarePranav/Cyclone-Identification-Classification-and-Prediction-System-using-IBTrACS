@@ -17,15 +17,16 @@ from dashboard.charts import (
 
 def render_page() -> None:
     """Renders the Cyclone Atlas Overview page."""
+    # 1. Global KPI Metrics
+    stats = get_global_summary_stats()
+
     render_header(
         title="Cyclone Atlas — Global Activity Overview",
-        subtitle="NOAA IBTrACS v04r01 (1980–2024) Global Meteorological Intelligence & Multitask AI Architecture",
+        subtitle=f"NOAA IBTrACS v04r01 ({stats['season_range']}) Global Meteorological Intelligence & Multitask AI Architecture",
         page_badge="IBTrACS v04r01"
     )
     render_disclaimer()
 
-    # 1. Global KPI Metrics
-    stats = get_global_summary_stats()
     c1, c2, c3, c4 = st.columns(4)
 
     with c1:
@@ -40,7 +41,7 @@ def render_page() -> None:
         render_metric_card(
             title="Verified Observations",
             value=f"{stats['total_observations']:,}",
-            subvalue="Deduplicated 6-hourly physical track steps",
+            subvalue="Deduplicated physical track steps",
             icon_key="activity",
             color_accent=COLORS['accent_teal']
         )
@@ -49,7 +50,7 @@ def render_page() -> None:
         render_metric_card(
             title="Evaluation Cohort (TEST)",
             value=f"{test_obs:,}",
-            subvalue="Independent 2020–2024 test split",
+            subvalue="Independent 2020+ test split",
             icon_key="shield_alert",
             color_accent=COLORS['accent_amber']
         )
@@ -101,7 +102,7 @@ def render_page() -> None:
             f"""
             <div class="card-header">
                 <span style="color: {COLORS['accent_amber']};">{ICONS['calendar']}</span>
-                Historical Annual Cyclone Activity (1980–2024)
+                Historical Annual Cyclone Activity ({stats['season_range']})
             </div>
             """,
             unsafe_allow_html=True
@@ -135,6 +136,7 @@ def render_page() -> None:
                 </div>
                 <hr style="border: none; border-top: 1px solid {COLORS['border_dark']}; margin: 0.75rem 0;">
                 <div style="font-size: 0.75rem; color: {COLORS['text_muted']};">
+                    <strong>Temporal Cohort:</strong> TRAIN 1980–2014 | VAL 2015–2019 | TEST 2020+.<br>
                     <strong>Features:</strong> Current USA wind, verified lags (t-6h, t-12h), wind trends, latitude, distance to land, month/hour cyclics.<br>
                     <strong>Algorithms:</strong> Linear Regression, Random Forest, Hist-Gradient XGBoost.
                 </div>
@@ -155,6 +157,7 @@ def render_page() -> None:
                 </div>
                 <hr style="border: none; border-top: 1px solid {COLORS['border_dark']}; margin: 0.75rem 0;">
                 <div style="font-size: 0.75rem; color: {COLORS['text_muted']};">
+                    <strong>Temporal Cohort:</strong> TRAIN 1970–2014 (earlier historical cohort) | VAL 2015–2019 | TEST 2020+.<br>
                     <strong>Reconstruction:</strong> Geodesic destination projection with strict [-180, +180] antimeridian wrapping and [-90, +90] clamping.<br>
                     <strong>Validation metric:</strong> Mean Haversine track error in km.
                 </div>
@@ -175,8 +178,9 @@ def render_page() -> None:
                 </div>
                 <hr style="border: none; border-top: 1px solid {COLORS['border_dark']}; margin: 0.75rem 0;">
                 <div style="font-size: 0.75rem; color: {COLORS['text_muted']};">
+                    <strong>Temporal Cohort:</strong> TRAIN 1980–2014 | VAL 2015–2019 | TEST 2020+.<br>
                     <strong>Thresholds:</strong> Strengthening (Δ ≥ +10 kt), Weakening (Δ ≤ -10 kt), Stable (|Δ| < 10 kt).<br>
-                    <strong>Validation metrics:</strong> Accuracy (0.753), Balanced Accuracy (0.741), Macro F1 (0.746).
+                    <strong>Test Performance:</strong> Accuracy (63.42%), Macro F1 (0.638).
                 </div>
             </div>
             """,

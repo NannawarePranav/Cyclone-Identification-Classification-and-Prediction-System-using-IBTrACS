@@ -95,7 +95,7 @@ def main():
         models_ok = all(models_status.values())
         missing_models = [k for k, v in models_status.items() if not v]
         status_color = COLORS['accent_teal'] if models_ok else COLORS['accent_amber']
-        status_text = "All 7 XGBoost Models Loaded" if models_ok else f"Missing: {len(missing_models)}"
+        status_text = "All 7 Model Artifacts Present" if models_ok else f"Missing: {len(missing_models)}"
 
         st.markdown(
             f"""
@@ -108,7 +108,7 @@ def main():
                     {status_text}
                 </div>
                 <div style="font-size: 0.72rem; color: {COLORS['text_dim']}; margin-top: 0.25rem;">
-                    NOAA IBTrACS v04r01 (1980–2024)<br>
+                    NOAA IBTrACS v04r01 Archive<br>
                     3 Verified Task Datasets
                 </div>
             </div>

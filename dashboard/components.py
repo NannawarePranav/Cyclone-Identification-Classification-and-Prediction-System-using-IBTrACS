@@ -146,11 +146,16 @@ def render_cyclone_selector(
                 key=f"{key_prefix}_season"
             )
 
-        # 3. Data Partition Filter
+        # 3. Data Partition Filter (with dataset-specific temporal cohort)
+        if dataset_type == 'movement':
+            split_options = ['ALL', 'TEST (2020+)', 'VAL (2015–2019)', 'TRAIN (1970–2014)']
+        else:
+            split_options = ['ALL', 'TEST (2020+)', 'VAL (2015–2019)', 'TRAIN (1980–2014)']
+
         with col3:
             split_choice = st.selectbox(
                 "Data Partition",
-                options=['ALL', 'TEST (2020+)', 'VAL (2016-2019)', 'TRAIN (1980-2015)'],
+                options=split_options,
                 index=1,  # Default to TEST
                 key=f"{key_prefix}_split"
             )
@@ -200,11 +205,16 @@ def render_cyclone_selector(
         if not selected_sid:
             return None, None, None
 
-        # 5. Load Observations for this Cyclone
+        # 5. Load Unique Physical Track Observations for this Cyclone
         obs_df = get_observations_for_cyclone(selected_sid, dataset_type=dataset_type)
         if obs_df.empty:
             st.error(f"No records found for storm ID {selected_sid}")
             return selected_sid, None, None
+
+        # Assert no duplicate physical timestamps exist
+        assert not obs_df.duplicated(subset=['ISO_TIME']).any(), (
+            f"Non-unique physical timestamps detected in track sequence for {selected_sid}"
+        )
 
         def format_obs(idx: int) -> str:
             row = obs_df.iloc[idx]

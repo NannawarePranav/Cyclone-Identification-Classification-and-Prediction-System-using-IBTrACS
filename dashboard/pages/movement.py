@@ -15,6 +15,7 @@ from dashboard.components import (
     render_observation_summary
 )
 from dashboard.inference import run_movement_forecast, calculate_haversine_error_km
+from dashboard.data_loader import get_horizon_targets_for_observation
 from dashboard.charts import create_trajectory_map
 
 
@@ -76,6 +77,13 @@ def render_page() -> None:
             unsafe_allow_html=True
         )
 
+        # Retrieve actual ground truth targets across all available horizons
+        horizon_targets = get_horizon_targets_for_observation(
+            sid=str(selected_row['SID']),
+            iso_time=selected_row['ISO_TIME'],
+            dataset_type='movement'
+        )
+
         kp1, kp2, kp3 = st.columns(3)
         cols_h = [(6, kp1, COLORS['accent_cyan']), (12, kp2, COLORS['accent_teal']), (24, kp3, COLORS['accent_amber'])]
 
@@ -85,12 +93,23 @@ def render_page() -> None:
             lon_p = h_info['lon_pred']
             dist_km = h_info['haversine_distance_km']
 
+            if h in horizon_targets:
+                gt_lat = horizon_targets[h]['target_lat']
+                gt_lon = horizon_targets[h]['target_lon']
+                err_km = float(calculate_haversine_error_km(
+                    np.array([gt_lat]), np.array([gt_lon]),
+                    np.array([lat_p]), np.array([lon_p])
+                )[0])
+                kpi_sub = f"GT: {gt_lat:.2f}°, {gt_lon:.2f}° | Track Error: {err_km:.1f} km"
+            else:
+                kpi_sub = f"Predicted Travel: {dist_km:.1f} km from eye (dx: {h_info['dx_km']:+.0f} km, dy: {h_info['dy_km']:+.0f} km)"
+
             with col:
                 render_metric_card(
                     title=f"+{h}h Reconstructed Position",
                     value=f"{lat_p:.2f}°, {lon_p:.2f}°",
-                    subvalue=f"Displacement: {dist_km:.1f} km from t=0 (dx: {h_info['dx_km']:+.0f} km, dy: {h_info['dy_km']:+.0f} km)",
-                    delta=f"+{dist_km:.0f} km trajectory",
+                    subvalue=kpi_sub,
+                    delta=f"{dist_km:.0f} km predicted travel from eye",
                     color_accent=color,
                     icon_key="compass"
                 )
@@ -127,13 +146,12 @@ def render_page() -> None:
         # Current row (t=0)
         table_rows.append({
             'Lead Horizon': 't=0 (Current Eye)',
-            'Latitude': f"{curr_lat:.3f}°",
-            'Longitude': f"{curr_lon:.3f}°",
-            'dx (East-West)': '0.0 km',
-            'dy (North-South)': '0.0 km',
-            'Haversine Dist': '0.0 km',
-            'Ground Truth': 'Verified Eye',
-            'Track Error': '0.0 km'
+            'Predicted Position': f"{curr_lat:.3f}°, {curr_lon:.3f}°",
+            'Predicted dx (East-West)': '0.0 km',
+            'Predicted dy (North-South)': '0.0 km',
+            'Predicted Travel Distance from Eye': '0.0 km',
+            'Actual Future Position (Ground Truth)': f"{curr_lat:.3f}°, {curr_lon:.3f}° (Observed)",
+            'Forecast Track Error (km)': '0.0 km (Reference)'
         })
 
         # Future horizons
@@ -142,24 +160,11 @@ def render_page() -> None:
             lat_p = h_info['lat_pred']
             lon_p = h_info['lon_pred']
 
-            # Find matching ground truth in obs_df if available
-            target_time = curr_time + pd.Timedelta(hours=h)
-            match = obs_df[pd.to_datetime(obs_df['ISO_TIME']) == target_time]
-
-            gt_str = "Unavailable"
+            gt_str = "Unavailable (Lifecycle ends)"
             err_str = "N/A"
-            if not match.empty:
-                gt_lat = float(match.iloc[0]['LAT'])
-                gt_lon = float(match.iloc[0].get('LON_NORM', match.iloc[0]['LON']))
-                gt_str = f"{gt_lat:.3f}°, {gt_lon:.3f}°"
-                err_km = float(calculate_haversine_error_km(
-                    np.array([gt_lat]), np.array([gt_lon]),
-                    np.array([lat_p]), np.array([lon_p])
-                )[0])
-                err_str = f"{err_km:.1f} km"
-            elif h == 24 and 'TARGET_LAT' in selected_row and pd.notna(selected_row['TARGET_LAT']):
-                gt_lat = float(selected_row['TARGET_LAT'])
-                gt_lon = float(selected_row['TARGET_LON_NORM'])
+            if h in horizon_targets:
+                gt_lat = horizon_targets[h]['target_lat']
+                gt_lon = horizon_targets[h]['target_lon']
                 gt_str = f"{gt_lat:.3f}°, {gt_lon:.3f}°"
                 err_km = float(calculate_haversine_error_km(
                     np.array([gt_lat]), np.array([gt_lon]),
@@ -169,13 +174,12 @@ def render_page() -> None:
 
             table_rows.append({
                 'Lead Horizon': f"+{h}h Forecast",
-                'Latitude': f"{lat_p:.3f}°",
-                'Longitude': f"{lon_p:.3f}°",
-                'dx (East-West)': f"{h_info['dx_km']:+.1f} km",
-                'dy (North-South)': f"{h_info['dy_km']:+.1f} km",
-                'Haversine Dist': f"{h_info['haversine_distance_km']:.1f} km",
-                'Ground Truth': gt_str,
-                'Track Error': err_str
+                'Predicted Position': f"{lat_p:.3f}°, {lon_p:.3f}°",
+                'Predicted dx (East-West)': f"{h_info['dx_km']:+.1f} km",
+                'Predicted dy (North-South)': f"{h_info['dy_km']:+.1f} km",
+                'Predicted Travel Distance from Eye': f"{h_info['haversine_distance_km']:.1f} km",
+                'Actual Future Position (Ground Truth)': gt_str,
+                'Forecast Track Error (km)': err_str
             })
 
         table_df = pd.DataFrame(table_rows)

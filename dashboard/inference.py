@@ -130,17 +130,18 @@ def run_movement_forecast(obs: Union[pd.Series, pd.DataFrame]) -> Dict[str, Any]
         lat_p = float(lat_pred_arr[0])
         lon_p = float(lon_pred_arr[0])
 
-        hav_err = calculate_haversine_error_km(lat_arr, lon_arr, lat_pred_arr, lon_pred_arr)
-        hav_dist = float(hav_err[0])
-        euc_dist = float(np.sqrt(dx_km**2 + dy_km**2))
+        # Calculate Great-Circle displacement distance from current eye to predicted point
+        hav_disp = calculate_haversine_error_km(lat_arr, lon_arr, lat_pred_arr, lon_pred_arr)
+        hav_dist_km = float(hav_disp[0])
+        euc_dist_km = float(np.sqrt(dx_km**2 + dy_km**2))
 
         results[h] = {
             'dx_km': round(dx_km, 1),
             'dy_km': round(dy_km, 1),
             'lat_pred': round(lat_p, 3),
             'lon_pred': round(lon_p, 3),
-            'displacement_distance_km': round(euc_dist, 1),
-            'haversine_distance_km': round(hav_dist, 1)
+            'displacement_distance_km': round(euc_dist_km, 1),
+            'haversine_distance_km': round(hav_dist_km, 1)
         }
 
     return {

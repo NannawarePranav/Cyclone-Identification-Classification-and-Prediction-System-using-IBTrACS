@@ -110,7 +110,8 @@ dashboard/
 │   ├── train_baselines.py
 │   ├── train_xgboost.py
 │   ├── test_model_loading.py
-│   └── test_dashboard_integrity.py
+│   ├── test_dashboard_integrity.py
+│   └── test_dashboard_refinements.py
 ├── src/
 │   └── cyclone_ml/         # Modular Python package for estimators, geodesy, and features
 │       ├── __init__.py

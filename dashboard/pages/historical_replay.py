@@ -55,7 +55,7 @@ def render_page() -> None:
         with col3:
             split_choice = st.selectbox(
                 "Data Partition",
-                options=['ALL', 'TEST (2020+)', 'VAL (2016-2019)', 'TRAIN (1980-2015)'],
+                options=['ALL', 'TEST (2020+)', 'VAL (2015–2019)', 'TRAIN (1970–2014)'],
                 index=0,
                 key="replay_split"
             )
@@ -98,14 +98,22 @@ def render_page() -> None:
     if not selected_sid:
         return
 
-    # 2. Load Deduplicated Storm Track
+    # 2. Load Deduplicated Physical Storm Track
     track_df = get_observations_for_cyclone(selected_sid, dataset_type='movement')
     if track_df.empty:
         st.error(f"No trajectory observations available for storm SID {selected_sid}")
         return
 
-    # Calculate cumulative distance traveled
+    # Ensure strictly sorted chronological physical observations with no duplicate timestamps
+    track_df['ISO_TIME'] = pd.to_datetime(track_df['ISO_TIME'])
+    track_df = track_df.sort_values('ISO_TIME').reset_index(drop=True)
+    assert not track_df.duplicated(subset=['ISO_TIME']).any(), (
+        f"Duplicate timestamps found in physical replay track for SID: {selected_sid}"
+    )
+
     total_steps = len(track_df)
+
+    # Calculate cumulative Great-Circle distance traveled
     cumulative_km = 0.0
     if total_steps > 1:
         lats = track_df['LAT'].values
@@ -113,8 +121,22 @@ def render_page() -> None:
         step_distances = calculate_haversine_error_km(lats[:-1], lons[:-1], lats[1:], lons[1:])
         cumulative_km = float(np.sum(step_distances))
 
-    start_iso = str(track_df.iloc[0]['ISO_TIME'])
-    end_iso = str(track_df.iloc[-1]['ISO_TIME'])
+    t_start = track_df['ISO_TIME'].iloc[0]
+    t_end = track_df['ISO_TIME'].iloc[-1]
+    actual_elapsed_seconds = (t_end - t_start).total_seconds()
+    actual_elapsed_hours = max(0.0, actual_elapsed_seconds / 3600.0)
+
+    if total_steps <= 1 or actual_elapsed_hours == 0:
+        duration_display = "Single Obs (0h)"
+        avg_speed_display = "N/A"
+    else:
+        days = actual_elapsed_hours / 24.0
+        duration_display = f"{actual_elapsed_hours:.0f} Hours ({days:.1f} Days)"
+        avg_speed = cumulative_km / actual_elapsed_hours
+        avg_speed_display = f"{avg_speed:.1f} km/h"
+
+    start_iso = t_start.strftime('%Y-%m-%d %H:%M')
+    end_iso = t_end.strftime('%Y-%m-%d %H:%M')
     max_wind = float(track_df['CURRENT_USA_WIND'].max()) if 'CURRENT_USA_WIND' in track_df and not track_df['CURRENT_USA_WIND'].dropna().empty else 0.0
 
     # 3. Lifecycle KPI Summary
@@ -124,8 +146,8 @@ def render_page() -> None:
     with k1:
         render_metric_card(
             title="Storm Duration",
-            value=f"{total_steps * 6} Hours",
-            subvalue=f"{total_steps} physical observations",
+            value=duration_display,
+            subvalue=f"{total_steps} physical observations ({start_iso[:10]} to {end_iso[:10]})",
             icon_key="clock",
             color_accent=COLORS['accent_cyan']
         )
@@ -133,7 +155,7 @@ def render_page() -> None:
         render_metric_card(
             title="Total Track Length",
             value=f"{cumulative_km:,.0f} km",
-            subvalue=f"Avg translation: {cumulative_km / max(1, total_steps * 6):.1f} km/h",
+            subvalue=f"Average translation speed: {avg_speed_display}",
             icon_key="compass",
             color_accent=COLORS['accent_teal']
         )

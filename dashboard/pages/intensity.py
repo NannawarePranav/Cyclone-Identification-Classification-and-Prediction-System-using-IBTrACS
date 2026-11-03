@@ -15,6 +15,7 @@ from dashboard.components import (
     render_info_banner
 )
 from dashboard.inference import run_intensity_forecast
+from dashboard.data_loader import get_horizon_targets_for_observation
 from dashboard.charts import create_intensity_forecast_chart
 
 
@@ -95,22 +96,25 @@ def render_page() -> None:
 
         horizons = [(6, kp1, COLORS['accent_cyan']), (12, kp2, COLORS['accent_teal']), (24, kp3, COLORS['accent_amber'])]
 
+        # Retrieve actual ground truth targets across all available horizons
+        horizon_targets = get_horizon_targets_for_observation(
+            sid=str(selected_row['SID']),
+            iso_time=selected_row['ISO_TIME'],
+            dataset_type='intensity'
+        )
+
         for h, col, color in horizons:
             pred_v = pred_dict[h]
             diff = pred_v - curr_val
             delta_str = f"{diff:+0.1f} {unit_suffix} from t=0"
 
-            # Check if ground truth exists in the dataset row
-            gt_col = f"TARGET_USA_WIND_{h}H"
-            subvalue = None
-            if gt_col in selected_row and pd.notna(selected_row[gt_col]):
-                gt_val = float(selected_row[gt_col])
-                if unit == "km/h":
-                    gt_val *= 1.852
-                err = abs(pred_v - gt_val)
-                subvalue = f"Ground Truth: {gt_val:.1f} {unit_suffix} | Error: {err:.1f} {unit_suffix}"
+            # Check if matching horizon target sample exists
+            if h in horizon_targets:
+                gt_val = horizon_targets[h]['target_wind_kts'] if unit == "knots" else horizon_targets[h]['target_wind_kmh']
+                abs_err = abs(pred_v - gt_val)
+                subvalue = f"Ground Truth: {gt_val:.1f} {unit_suffix} | Absolute Error: {abs_err:.1f} {unit_suffix}"
             else:
-                subvalue = "Ground truth unavailable (end of recorded track)"
+                subvalue = f"Ground Truth: Unavailable (+{h}h beyond recorded track)"
 
             with col:
                 render_metric_card(

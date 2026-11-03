@@ -159,14 +159,16 @@ def render_page() -> None:
 
     # 4. Basin-Wise Breakdown & Generalization Insights
     st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
-    with st.expander("Basin-Wise Generalization Analysis (Test Set, 2020–Present)", expanded=True):
+    with st.expander("Model 1: +24h Intensity Performance by Basin (Test Set: 2020–Present)", expanded=True):
         st.markdown(
             """
-            Across all oceanic basins, **XGBoost demonstrates consistent, non-degrading skill** over both simple climatological baselines and Random Forests:
-            - **Eastern Pacific (EP):** Highest relative intensity skill (+33.88% at +24h, MAE 8.40 kt vs Persistence 12.71 kt), driven by steady steering flows and strong sea surface temperature gradients.
-            - **North Atlantic (NA):** Intensity MAE reaches 9.01 kt (+23.28% skill vs persistence) and 6h track error decreases to 35.8 km.
-            - **North Indian (NI):** Characterized by high variability due to seasonal monsoons and land boundaries, yet XGBoost improves 24h intensity from 15.25 kt persistence to 10.05 kt (+34.10% skill).
-            - **Western Pacific (WP):** The most active basin worldwide; 24h track displacement error is reduced from 215.3 km (constant-velocity) to 184.2 km.
+            Across all evaluated oceanic basins, **XGBoost demonstrates consistent, positive skill** relative to persistence benchmarks and outperforms Random Forest baselines:
+            - **Eastern Pacific (EP):** 24h intensity MAE of 8.40 kt (+33.88% skill over 12.71 kt persistence).
+            - **North Atlantic (NA):** 24h intensity MAE of 9.01 kt (+23.28% skill over 11.75 kt persistence).
+            - **North Indian (NI):** 24h intensity MAE of 10.05 kt (+34.10% skill over 15.25 kt persistence).
+            - **South Indian (SI):** 24h intensity MAE of 10.22 kt (+20.36% skill over 12.83 kt persistence).
+            - **South Pacific (SP):** 24h intensity MAE of 10.00 kt (+26.60% skill over 13.62 kt persistence).
+            - **Western Pacific (WP):** 24h intensity MAE of 10.32 kt (+32.46% skill over 15.29 kt persistence).
             """
         )
 
@@ -174,22 +176,22 @@ def render_page() -> None:
             {"Basin": "EP — Eastern North Pacific", "Test Obs": "2,430", "Pers 24h MAE": "12.71 kt", "RF 24h MAE": "8.75 kt", "XGB 24h MAE": "8.40 kt", "Skill vs Pers": "+33.88%"},
             {"Basin": "NA — North Atlantic", "Test Obs": "2,971", "Pers 24h MAE": "11.75 kt", "RF 24h MAE": "9.55 kt", "XGB 24h MAE": "9.01 kt", "Skill vs Pers": "+23.28%"},
             {"Basin": "NI — North Indian", "Test Obs": "540", "Pers 24h MAE": "15.25 kt", "RF 24h MAE": "10.73 kt", "XGB 24h MAE": "10.05 kt", "Skill vs Pers": "+34.10%"},
-            {"Basin": "SI — South Indian", "Test Obs": "2,488", "Pers 24h MAE": "13.68 kt", "RF 24h MAE": "10.66 kt", "XGB 24h MAE": "10.22 kt", "Skill vs Pers": "+25.29%"},
-            {"Basin": "SP — South Pacific", "Test Obs": "942", "Pers 24h MAE": "13.82 kt", "RF 24h MAE": "10.82 kt", "XGB 24h MAE": "10.41 kt", "Skill vs Pers": "+24.67%"},
-            {"Basin": "WP — Western North Pacific", "Test Obs": "2,912", "Pers 24h MAE": "15.20 kt", "RF 24h MAE": "11.23 kt", "XGB 24h MAE": "10.79 kt", "Skill vs Pers": "+29.01%"}
+            {"Basin": "SI — South Indian", "Test Obs": "2,636", "Pers 24h MAE": "12.83 kt", "RF 24h MAE": "10.50 kt", "XGB 24h MAE": "10.22 kt", "Skill vs Pers": "+20.36%"},
+            {"Basin": "SP — South Pacific", "Test Obs": "1,000", "Pers 24h MAE": "13.62 kt", "RF 24h MAE": "10.68 kt", "XGB 24h MAE": "10.00 kt", "Skill vs Pers": "+26.60%"},
+            {"Basin": "WP — Western North Pacific", "Test Obs": "3,035", "Pers 24h MAE": "15.29 kt", "RF 24h MAE": "10.70 kt", "XGB 24h MAE": "10.32 kt", "Skill vs Pers": "+32.46%"}
         ]
         st.dataframe(pd.DataFrame(basin_summary_data), use_container_width=True, hide_index=True)
 
     # 5. Methodological Integrity & Academic Rigor
     with st.expander("Methodological Safeguards & Data Governance", expanded=False):
         st.markdown(
-            """
+            r"""
             1. **Zero Information Leakage:** Models were fitted solely using pre-forecast historical features. Target values (`TARGET_*`), future coordinates, and storm identifiers (`SID`, `ISO_TIME`) were strictly isolated.
-            2. **Temporal Split Discipline:** Observation cohorts were partitioned strictly chronologically:
-               - **TRAIN:** 1980 – 2014 (35 years)
-               - **VAL:** 2015 – 2019 (5 years, used for candidate parameter selection)
-               - **TEST:** 2020 – 2024 (Untouched 5-year independent test set)
+            2. **Authoritative Temporal Split Discipline:** Observation cohorts were partitioned strictly chronologically at the cyclone level:
+               - **Model 1 (Intensity):** TRAIN $\le 2014$ (1980–2014) • VAL 2015–2019 • TEST 2020 onward
+               - **Model 2 (Movement):** TRAIN $\le 2014$ (1970–2014, earlier historical cohort) • VAL 2015–2019 • TEST 2020 onward
+               - **Model 3 (Development):** TRAIN $\le 2014$ (1980–2014) • VAL 2015–2019 • TEST 2020 onward
             3. **Spherical Geodesy:** Movement trajectory models use true spherical trigonometric transformations with antimeridian discontinuity handling.
-            4. **Artifact Portability:** All 18 model pipelines are self-contained with scikit-learn compatible custom transformers located in `src/cyclone_ml/estimators.py`.
+            4. **Artifact Portability:** All 18 model pipelines are self-contained with scikit-learn compatible custom estimators located in `src/cyclone_ml/estimators.py`.
             """
         )
