@@ -1,0 +1,44 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.obj
+*.dll
+
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / Packaging
+build/
+dist/
+*.egg-info/
+
+# Raw Data (exceeds GitHub file size limit: raw CSV is ~333 MB)
+raw/*.csv
+raw/*.gz
+raw/*.tar
+
+# Compressed Archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Large Baseline Model Binaries (exceed GitHub's 100 MB file limit; can be regenerated via scripts/train_baselines.py)
+models/baselines/*.joblib
+!models/baselines/README.md
+
+# OS & Editor Files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/

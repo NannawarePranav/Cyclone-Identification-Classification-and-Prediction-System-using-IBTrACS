@@ -1,0 +1,13 @@
+# Model Serving and Inference Environment Requirements
+# Project: Prediction of Different Tropical Cyclones Patterns
+# Python Environment: 3.13.14 (tags/v3.13.14:fd17997) 64-bit AMD64
+# Generated: 2026-11-03
+
+python>=3.13.0,<3.14.0
+numpy==2.5.4
+pandas==3.1.0
+scikit-learn==1.9.1
+xgboost==3.4.1
+joblib==1.6.0
+pyarrow==26.0.0
+scipy==1.18.1
