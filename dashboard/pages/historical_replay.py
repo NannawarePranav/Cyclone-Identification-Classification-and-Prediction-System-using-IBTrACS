@@ -199,10 +199,10 @@ def render_page() -> None:
             st.session_state[step_state_key] = 0
 
         with b_prev:
-            if st.button("◀ Prev", use_container_width=True):
+            if st.button("< Prev", width="stretch"):
                 st.session_state[step_state_key] = max(0, st.session_state[step_state_key] - 1)
         with b_next:
-            if st.button("Next ▶", use_container_width=True):
+            if st.button("Next >", width="stretch"):
                 st.session_state[step_state_key] = min(total_steps - 1, st.session_state[step_state_key] + 1)
 
     with slider_col:
@@ -229,7 +229,7 @@ def render_page() -> None:
     # 5. Interactive Replay Map
     st.markdown("<div style='margin-top: 0.75rem;'></div>", unsafe_allow_html=True)
     replay_fig = create_replay_map(track_df, current_step)
-    st.plotly_chart(replay_fig, use_container_width=True)
+    st.plotly_chart(replay_fig, width="stretch")
 
     # 6. Storm Intensity Profile Evolution Chart
     st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
@@ -275,10 +275,10 @@ def render_page() -> None:
             yaxis=dict(title="USA Sustained Wind (knots)"),
             showlegend=True
         )
-        st.plotly_chart(wind_fig, use_container_width=True)
+        st.plotly_chart(wind_fig, width="stretch")
 
     # 7. Complete Historical Track Table
     with st.expander(f"Inspect Complete Historical Track Data ({total_steps} Observations)", expanded=False):
         display_cols = ['ISO_TIME', 'LAT', 'LON_NORM', 'CURRENT_USA_WIND', 'DIST2LAND', 'NATURE', 'BASIN', 'SPLIT']
         available_display_cols = [c for c in display_cols if c in track_df.columns]
-        st.dataframe(track_df[available_display_cols], use_container_width=True)
+        st.dataframe(track_df[available_display_cols], width="stretch")

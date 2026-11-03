@@ -49,7 +49,7 @@ def render_page() -> None:
     st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
     c1, c2 = st.columns([1.5, 3])
     with c1:
-        run_btn = st.button("Generate Trajectory Forecast", type="primary", use_container_width=True)
+        run_btn = st.button("Generate Trajectory Forecast", type="primary", width="stretch")
     with c2:
         split_badge = selected_row.get('SPLIT', 'UNKNOWN')
         st.caption(f"Storm SID: `{selected_row.get('SID', 'N/A')}` | Split: **{split_badge}** | Geodesy: Spherical Haversine ($R = 6371$ km)")
@@ -128,7 +128,7 @@ def render_page() -> None:
             forecast_results=horizons_data,
             past_track=past_track
         )
-        st.plotly_chart(map_fig, use_container_width=True)
+        st.plotly_chart(map_fig, width="stretch")
 
         # 6. Detailed Tabular Coordinate Forecast
         st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
@@ -183,7 +183,7 @@ def render_page() -> None:
             })
 
         table_df = pd.DataFrame(table_rows)
-        st.dataframe(table_df, use_container_width=True, hide_index=True)
+        st.dataframe(table_df, width="stretch", hide_index=True)
 
         # 7. Model Features Inspection
         with st.expander("Inspect Model 2 Input Features", expanded=False):
@@ -197,5 +197,5 @@ def render_page() -> None:
                 if f in selected_row:
                     v = selected_row[f]
                     f_vals[f] = [f"{v:.3f}" if isinstance(v, float) else str(v)]
-            st.dataframe(pd.DataFrame(f_vals), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(f_vals), width="stretch", hide_index=True)
             st.caption("Coordinates reconstructed via `src.cyclone_ml.geodesy.reconstruct_coordinates` preserving antimeridian continuity.")

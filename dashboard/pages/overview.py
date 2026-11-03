@@ -79,7 +79,7 @@ def render_page() -> None:
     with st.spinner("Rendering global trajectory map..."):
         df_mov = load_movement_dataset()
         map_fig = create_global_activity_map(df_mov, sample_storms=250)
-        st.plotly_chart(map_fig, use_container_width=True)
+        st.plotly_chart(map_fig, width="stretch")
 
     # 3. Climatological Distribution Charts
     col_chart1, col_chart2 = st.columns(2)
@@ -95,7 +95,7 @@ def render_page() -> None:
             unsafe_allow_html=True
         )
         basin_fig = create_basin_distribution_chart(stats['basin_distribution'])
-        st.plotly_chart(basin_fig, use_container_width=True)
+        st.plotly_chart(basin_fig, width="stretch")
 
     with col_chart2:
         st.markdown(
@@ -108,7 +108,7 @@ def render_page() -> None:
             unsafe_allow_html=True
         )
         trend_fig = create_historical_trend_chart(df_mov)
-        st.plotly_chart(trend_fig, use_container_width=True)
+        st.plotly_chart(trend_fig, width="stretch")
 
     # 4. Multi-Task Machine Learning Architecture Breakdown
     st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)

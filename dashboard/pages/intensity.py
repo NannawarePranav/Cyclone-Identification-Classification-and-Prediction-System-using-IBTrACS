@@ -61,7 +61,7 @@ def render_page() -> None:
     with ctrl_col2:
         st.write("")  # spacing
         st.write("")
-        run_btn = st.button("Generate Intensity Forecast", type="primary", use_container_width=True)
+        run_btn = st.button("Generate Intensity Forecast", type="primary", width="stretch")
 
     with ctrl_col3:
         st.write("")
@@ -145,7 +145,7 @@ def render_page() -> None:
             past_winds=past_winds,
             unit=unit
         )
-        st.plotly_chart(fig_int, use_container_width=True)
+        st.plotly_chart(fig_int, width="stretch")
 
         # 6. Model Inputs Inspection Accordion
         with st.expander("Inspect Model Input Features & Preprocessing State", expanded=False):
@@ -164,5 +164,5 @@ def render_page() -> None:
                     feature_data[col] = [val]
 
             f_df = pd.DataFrame(feature_data)
-            st.dataframe(f_df, use_container_width=True, hide_index=True)
+            st.dataframe(f_df, width="stretch", hide_index=True)
             st.caption("All features strictly adhere to `reports/model_feature_manifest.md` with verified zero target leakage.")

@@ -60,7 +60,7 @@ def render_page() -> None:
     st.markdown("<div style='margin-top: 1rem;'></div>", unsafe_allow_html=True)
     c1, c2 = st.columns([1.5, 3])
     with c1:
-        run_btn = st.button("Classify Development Pattern", type="primary", use_container_width=True)
+        run_btn = st.button("Classify Development Pattern", type="primary", width="stretch")
     with c2:
         split_badge = selected_row.get('SPLIT', 'UNKNOWN')
         st.caption(f"Storm SID: `{selected_row.get('SID', 'N/A')}` | Split: **{split_badge}** | Horizon: **+24 Hours**")
@@ -148,7 +148,7 @@ def render_page() -> None:
             unsafe_allow_html=True
         )
         prob_fig = create_development_probability_chart(probs)
-        st.plotly_chart(prob_fig, use_container_width=True)
+        st.plotly_chart(prob_fig, width="stretch")
 
         # 7. Physical Regime Definitions & Manifest Reference
         st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
@@ -212,5 +212,5 @@ def render_page() -> None:
                 if f in selected_row:
                     v = selected_row[f]
                     f_vals[f] = [f"{v:.3f}" if isinstance(v, float) else str(v)]
-            st.dataframe(pd.DataFrame(f_vals), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(f_vals), width="stretch", hide_index=True)
             st.caption("Target definition: `reports/model_feature_manifest.md` | Model artifact: `models/xgboost/m3_xgboost.joblib`")

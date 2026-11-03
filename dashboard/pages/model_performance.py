@@ -143,7 +143,7 @@ def render_page() -> None:
             "Status": "Superior"
         }
     ]
-    st.dataframe(pd.DataFrame(master_benchmarks), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(master_benchmarks), width="stretch", hide_index=True)
 
     # 3. Model Benchmark Visualizations
     st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
@@ -151,11 +151,11 @@ def render_page() -> None:
 
     col_v1, col_v2 = st.columns(2)
     with col_v1:
-        st.plotly_chart(fig_m1, use_container_width=True)
+        st.plotly_chart(fig_m1, width="stretch")
     with col_v2:
-        st.plotly_chart(fig_m2, use_container_width=True)
+        st.plotly_chart(fig_m2, width="stretch")
 
-    st.plotly_chart(fig_m3, use_container_width=True)
+    st.plotly_chart(fig_m3, width="stretch")
 
     # 4. Basin-Wise Breakdown & Generalization Insights
     st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
@@ -180,7 +180,7 @@ def render_page() -> None:
             {"Basin": "SP — South Pacific", "Test Obs": "1,000", "Pers 24h MAE": "13.62 kt", "RF 24h MAE": "10.68 kt", "XGB 24h MAE": "10.00 kt", "Skill vs Pers": "+26.60%"},
             {"Basin": "WP — Western North Pacific", "Test Obs": "3,035", "Pers 24h MAE": "15.29 kt", "RF 24h MAE": "10.70 kt", "XGB 24h MAE": "10.32 kt", "Skill vs Pers": "+32.46%"}
         ]
-        st.dataframe(pd.DataFrame(basin_summary_data), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(basin_summary_data), width="stretch", hide_index=True)
 
     # 5. Methodological Integrity & Academic Rigor
     with st.expander("Methodological Safeguards & Data Governance", expanded=False):

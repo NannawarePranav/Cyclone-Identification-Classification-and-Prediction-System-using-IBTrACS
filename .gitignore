@@ -45,4 +45,5 @@ desktop.ini
 
 # Local Tooling & Agent Artifacts
 .agents/
+.claude/
 .streamlit/
