@@ -1,0 +1,7 @@
+# Cyclone Atlas Interactive Dashboard Dependencies
+# Inherits all model serving and inference requirements
+-r requirements-models.txt
+
+# Interactive Web Application & Geospatial Visualization
+streamlit>=1.40.0
+plotly>=5.24.0

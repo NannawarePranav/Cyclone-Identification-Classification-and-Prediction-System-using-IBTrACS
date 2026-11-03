@@ -42,3 +42,7 @@ desktop.ini
 
 # Jupyter Notebook Checkpoints
 .ipynb_checkpoints/
+
+# Local Tooling & Agent Artifacts
+.agents/
+.streamlit/

@@ -1,6 +1,6 @@
 # Cyclone Identification, Classification, and Prediction System using NOAA IBTrACS
 
-An end-to-end, reproducible machine learning system for predicting tropical cyclone intensity, movement trajectory, and 24-hour rapid development patterns across global oceanic basins using the NOAA International Best Track Archive for Climate Stewardship (IBTrACS v04r01).
+An end-to-end, reproducible machine learning system and interactive web dashboard for predicting tropical cyclone intensity, movement trajectory, and 24-hour rapid development patterns across global oceanic basins using the NOAA International Best Track Archive for Climate Stewardship (IBTrACS v04r01).
 
 ---
 
@@ -23,6 +23,44 @@ This system formulates and solves three distinct meteorological prediction tasks
 
 ---
 
+## 🌐 Cyclone Atlas Interactive Dashboard
+
+The repository features **Cyclone Atlas**, a polished, dark-ocean scientific intelligence dashboard built with Streamlit and Plotly for exploring historical IBTrACS records, running live XGBoost inference, animating storm lifecycles, and reviewing academic benchmark scoreboards.
+
+```bash
+# Launch the dashboard locally
+pip install -r requirements-dashboard.txt
+streamlit run app.py
+```
+
+### Dashboard Architecture & Core Modules
+```text
+dashboard/
+├── config.py              # Dark ocean color tokens, SVG icons, and custom CSS
+├── data_loader.py         # Cached Parquet data loaders and cyclone catalog indexer
+├── model_loader.py        # Cached XGBoost model loaders and artifact validator
+├── inference.py           # Decoupled inference pipelines and geodetic reconstruction
+├── charts.py              # Plotly dark ocean maps, time-series, and performance plots
+├── components.py          # Standardized headers, metric cards, and cyclone selectors
+└── pages/
+    ├── overview.py        # Global activity map, basin metrics, and AI architecture
+    ├── intensity.py       # Multi-horizon intensity forecasting (+6h, +12h, +24h)
+    ├── movement.py        # Multi-horizon trajectory forecast with geodetic reconstruction
+    ├── development.py     # 24-hour intensification regime classification & probabilities
+    ├── historical_replay.py # Chronological step-through playback and intensity profiles
+    └── model_performance.py # Academic-grade scoreboards on independent test cohort (2020+)
+```
+
+### Key Interactive Features
+- **Global Climatology & Activity:** High-performance Plotly Scattergeo visualizations of historical cyclone paths, basin distributions, and annual activity trends (1980–2024).
+- **Live Multi-Horizon Inference:** Run all 7 trained XGBoost models on any historical storm observation with zero data leakage.
+- **Spherical Geodesy Reconstruction:** Converts Model 2 tangent-plane displacement ($dx, dy$) into true latitude and longitude while strictly respecting antimeridian $[-180^\circ, 180^\circ]$ boundaries.
+- **Historical Lifecycle Replay:** Chronologically scrub through any recorded cyclone, analyzing elapsed translation speed, cumulative track distance, and peak sustained wind.
+- **Uncalibrated Probability Disclosure:** Explicitly documents raw softmax confidence for Model 3, emphasizing relative ranking rather than calibrated likelihoods.
+- **Strict Dark Ocean Aesthetic:** Designed according to [`design-system/cyclone-atlas/MASTER.md`](design-system/cyclone-atlas/MASTER.md) with custom typography, responsive metric cards, and persistent research disclaimers.
+
+---
+
 ## 📊 Benchmark Scoreboard (`TEST` Partition: 2020–Present)
 
 | Model Task | Target / Metric | Horizon | Simple Baseline | Random Forest | XGBoost (Selected) | Skill vs. Baseline | Delta vs. RF |
@@ -40,6 +78,11 @@ This system formulates and solves three distinct meteorological prediction tasks
 ## 📁 Repository Structure
 
 ```text
+├── app.py                  # Main entry point for Cyclone Atlas web dashboard
+├── dashboard/              # Modular dashboard package (config, loaders, charts, pages)
+├── design-system/          # Design tokens and visual specifications
+│   └── cyclone-atlas/
+│       └── MASTER.md       # Dark ocean scientific design tokens and guidelines
 ├── models/
 │   ├── baselines/          # Serialized Linear, Logistic, and RF pipelines (README included)
 │   └── xgboost/            # Serialized XGBoost pipelines (~1.5–4.7 MB each)
@@ -66,14 +109,16 @@ This system formulates and solves three distinct meteorological prediction tasks
 │   ├── validate_processed_datasets.py
 │   ├── train_baselines.py
 │   ├── train_xgboost.py
-│   └── test_model_loading.py
+│   ├── test_model_loading.py
+│   └── test_dashboard_integrity.py
 ├── src/
 │   └── cyclone_ml/         # Modular Python package for estimators, geodesy, and features
 │       ├── __init__.py
 │       ├── estimators.py   # CycloneClassifier Scikit-learn wrapper
 │       ├── geodesy.py      # Spherical coordinate reconstruction & Haversine distance
 │       └── features.py     # Cyclical Month/Hour feature transforms
-├── requirements-models.txt # Exact frozen library versions for model serving
+├── requirements-models.txt    # Exact frozen library versions for model serving
+├── requirements-dashboard.txt # Extended dependencies for Streamlit and Plotly dashboard
 └── .gitignore              # Git exclusion rules for large datasets, binaries, and caches
 ```
 
@@ -89,16 +134,21 @@ cd Cyclone-Identification-Classification-and-Prediction-System-using-IBTrACS
 
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .\.venv\Scripts\Activate.ps1
-pip install -r requirements-models.txt
+pip install -r requirements-dashboard.txt
 ```
 
-### 2. Verify Model Portability & Run Inference Smoke Tests
-Test all 18 models across Model 1, Model 2, and Model 3:
+### 2. Verify System & Model Integrity
+Run the automated verification suite to validate all models, data pipelines, and visualizations:
 ```bash
-python scripts/test_model_loading.py
+python scripts/test_dashboard_integrity.py
 ```
 
-### 3. Training and Experiments
+### 3. Launch the Cyclone Atlas Dashboard
+```bash
+streamlit run app.py
+```
+
+### 4. Training and Reproducibility
 - **Reproduce Baseline Models:**
   ```bash
   python scripts/train_baselines.py --model all
@@ -115,6 +165,7 @@ python scripts/test_model_loading.py
 - **NOAA Agency Wind Harmonization:** Uses 1-minute maximum sustained wind (`USA_WIND`) from JTWC and NHC, filtering strictly for original/verified observations using character 0 of the IBTrACS `IFLAG` (`'O'` and `'V'`).
 - **Antimeridian & Latitude Continuity:** Longitudes are normalized to $[-180^\circ, 180^\circ]$. Movement targets are computed using local tangent-plane orthogonal eastward and northward displacements ($dx, dy$) in kilometers, avoiding antimeridian discontinuity artifacts.
 - **Strict Anti-Leakage Discipline:** Preprocessors (imputers, one-hot encoders, scalers) are fitted strictly on `TRAIN` ($\le 2014$). Hyperparameters are tuned on `VAL` ($2015\text{--}2019$). Final metrics are reported on untouched `TEST` ($2020+$).
+- **Persistent Research Notice:** All dashboard views incorporate a research disclaimer clarifying that predictions are derived from historical best-track data and are not intended as live operational weather warnings.
 
 ---
 
