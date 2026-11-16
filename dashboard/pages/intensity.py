@@ -34,19 +34,18 @@ def render_page() -> None:
         return
 
     # 2. Selected Observation Summary
-    st.markdown(
+    st.html(
         f"""
         <div class="card-header">
             <span style="color: {COLORS['accent_cyan']};">{ICONS['wind']}</span>
             Selected Storm State (t = 0)
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
     render_observation_summary(selected_row, dataset_type='intensity')
 
     # 3. Forecast Execution Controls
-    st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
+    st.html("<div style='margin-top: 1.25rem;'></div>")
     ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([1.5, 1.5, 2])
 
     with ctrl_col1:
@@ -77,15 +76,14 @@ def render_page() -> None:
         with st.spinner("Executing Model 1 XGBoost inference across +6h, +12h, and +24h horizons..."):
             forecast = run_intensity_forecast(selected_row)
 
-        st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
-        st.markdown(
+        st.html("<div style='margin-top: 1.25rem;'></div>")
+        st.html(
             f"""
             <div class="card-header">
                 <span style="color: {COLORS['accent_teal']};">{ICONS['activity']}</span>
                 Multi-Horizon Wind Speed Predictions
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         # 4. Multi-horizon KPI Cards
@@ -127,7 +125,7 @@ def render_page() -> None:
                 )
 
         # 5. Forecast Trajectory Plot
-        st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
+        st.html("<div style='margin-top: 1.5rem;'></div>")
 
         past_winds = None
         has_6h = bool(selected_row.get('HAS_PAST_USA_WIND_6H', 0))

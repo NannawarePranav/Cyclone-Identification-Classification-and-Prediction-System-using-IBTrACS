@@ -34,19 +34,18 @@ def render_page() -> None:
         return
 
     # 2. Selected Observation Summary
-    st.markdown(
+    st.html(
         f"""
         <div class="card-header">
             <span style="color: {COLORS['accent_cyan']};">{ICONS['compass']}</span>
             Selected Storm State (t = 0)
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
     render_observation_summary(selected_row, dataset_type='movement')
 
     # 3. Forecast Trigger Button
-    st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
+    st.html("<div style='margin-top: 1.25rem;'></div>")
     c1, c2 = st.columns([1.5, 3])
     with c1:
         run_btn = st.button("Generate Trajectory Forecast", type="primary", width="stretch")
@@ -66,15 +65,14 @@ def render_page() -> None:
         horizons_data = forecast['horizons']
 
         # 4. Multi-Horizon KPI Cards
-        st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
-        st.markdown(
+        st.html("<div style='margin-top: 1.25rem;'></div>")
+        st.html(
             f"""
             <div class="card-header">
                 <span style="color: {COLORS['accent_teal']};">{ICONS['navigation']}</span>
                 Reconstructed Geodetic Coordinates & Displacement
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         # Retrieve actual ground truth targets across all available horizons
@@ -115,7 +113,7 @@ def render_page() -> None:
                 )
 
         # 5. Interactive Trajectory Map
-        st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
+        st.html("<div style='margin-top: 1.5rem;'></div>")
 
         # Build past track slice
         curr_time = pd.to_datetime(selected_row['ISO_TIME'])
@@ -131,15 +129,14 @@ def render_page() -> None:
         st.plotly_chart(map_fig, width="stretch")
 
         # 6. Detailed Tabular Coordinate Forecast
-        st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
-        st.markdown(
+        st.html("<div style='margin-top: 1.25rem;'></div>")
+        st.html(
             f"""
             <div class="card-header">
                 <span style="color: {COLORS['accent_cyan']};">{ICONS['compass']}</span>
                 Coordinate Reconstruction & Geodetic Error Analysis
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         table_rows = []

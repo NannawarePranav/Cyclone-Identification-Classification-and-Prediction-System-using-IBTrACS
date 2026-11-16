@@ -34,14 +34,13 @@ def render_page() -> None:
         return
 
     # 2. Selected Observation Summary
-    st.markdown(
+    st.html(
         f"""
         <div class="card-header">
             <span style="color: {COLORS['accent_cyan']};">{ICONS['activity']}</span>
             Selected Storm State (t = 0)
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
     render_observation_summary(selected_row, dataset_type='development')
 
@@ -57,7 +56,7 @@ def render_page() -> None:
     )
 
     # 4. Classification Trigger Controls
-    st.markdown("<div style='margin-top: 1rem;'></div>", unsafe_allow_html=True)
+    st.html("<div style='margin-top: 1rem;'></div>")
     c1, c2 = st.columns([1.5, 3])
     with c1:
         run_btn = st.button("Classify Development Pattern", type="primary", width="stretch")
@@ -83,15 +82,14 @@ def render_page() -> None:
         elif pred_class == 'Weakening':
             class_color = COLORS['accent_teal']
 
-        st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
-        st.markdown(
+        st.html("<div style='margin-top: 1.25rem;'></div>")
+        st.html(
             f"""
             <div class="card-header">
                 <span style="color: {class_color};">{ICONS['activity']}</span>
                 Predicted 24-Hour Evolutionary Regime
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         # 5. Result Metric Cards
@@ -137,25 +135,24 @@ def render_page() -> None:
             )
 
         # 6. Probability Distribution Plot
-        st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
-        st.markdown(
+        st.html("<div style='margin-top: 1.5rem;'></div>")
+        st.html(
             f"""
             <div class="card-header">
                 <span style="color: {COLORS['accent_cyan']};">{ICONS['bar_chart']}</span>
                 Decision Probability Distribution Across Classes
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
         prob_fig = create_development_probability_chart(probs)
         st.plotly_chart(prob_fig, width="stretch")
 
         # 7. Physical Regime Definitions & Manifest Reference
-        st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
+        st.html("<div style='margin-top: 1.25rem;'></div>")
         col_def1, col_def2, col_def3 = st.columns(3)
 
         with col_def1:
-            st.markdown(
+            st.html(
                 f"""
                 <div class="kpi-card" style="border-top: 2px solid {COLORS['accent_amber']};">
                     <div style="font-size: 0.8rem; font-weight: 700; color: {COLORS['accent_amber']}; margin-bottom: 0.35rem;">
@@ -165,12 +162,11 @@ def render_page() -> None:
                         Defined as a 24-hour maximum sustained wind speed increase of <strong>Δ ≥ +10 kt</strong>.
                     </div>
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
         with col_def2:
-            st.markdown(
+            st.html(
                 f"""
                 <div class="kpi-card" style="border-top: 2px solid {COLORS['accent_cyan']};">
                     <div style="font-size: 0.8rem; font-weight: 700; color: {COLORS['accent_cyan']}; margin-bottom: 0.35rem;">
@@ -180,12 +176,11 @@ def render_page() -> None:
                         Defined as steady-state intensity with 24-hour wind variation <strong>|Δ| &lt; 10 kt</strong>.
                     </div>
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
         with col_def3:
-            st.markdown(
+            st.html(
                 f"""
                 <div class="kpi-card" style="border-top: 2px solid {COLORS['accent_teal']};">
                     <div style="font-size: 0.8rem; font-weight: 700; color: {COLORS['accent_teal']}; margin-bottom: 0.35rem;">
@@ -195,8 +190,7 @@ def render_page() -> None:
                         Defined as rapid or gradual decay with 24-hour wind decrease of <strong>Δ ≤ -10 kt</strong>.
                     </div>
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
         # 8. Feature Inputs Inspector

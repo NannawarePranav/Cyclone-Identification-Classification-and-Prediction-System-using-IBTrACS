@@ -140,7 +140,7 @@ def render_page() -> None:
     max_wind = float(track_df['CURRENT_USA_WIND'].max()) if 'CURRENT_USA_WIND' in track_df and not track_df['CURRENT_USA_WIND'].dropna().empty else 0.0
 
     # 3. Lifecycle KPI Summary
-    st.markdown("<div style='margin-top: 1rem;'></div>", unsafe_allow_html=True)
+    st.html("<div style='margin-top: 1rem;'></div>")
     k1, k2, k3, k4 = st.columns(4)
 
     with k1:
@@ -178,15 +178,14 @@ def render_page() -> None:
         )
 
     # 4. Interactive Step Slider & Playback Controls
-    st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
-    st.markdown(
+    st.html("<div style='margin-top: 1.5rem;'></div>")
+    st.html(
         f"""
         <div class="card-header">
             <span style="color: {COLORS['accent_cyan']};">{ICONS['play']}</span>
             Chronological Track Step-Through
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
     ctrl_col, slider_col = st.columns([1, 4])
@@ -227,20 +226,19 @@ def render_page() -> None:
     )
 
     # 5. Interactive Replay Map
-    st.markdown("<div style='margin-top: 0.75rem;'></div>", unsafe_allow_html=True)
+    st.html("<div style='margin-top: 0.75rem;'></div>")
     replay_fig = create_replay_map(track_df, current_step)
     st.plotly_chart(replay_fig, width="stretch")
 
     # 6. Storm Intensity Profile Evolution Chart
-    st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
-    st.markdown(
+    st.html("<div style='margin-top: 1.25rem;'></div>")
+    st.html(
         f"""
         <div class="card-header">
             <span style="color: {COLORS['accent_teal']};">{ICONS['wind']}</span>
             Lifecycle Intensity Profile (1-Minute Sustained Wind Speed)
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
     if 'CURRENT_USA_WIND' in track_df and not track_df['CURRENT_USA_WIND'].dropna().empty:

@@ -58,17 +58,16 @@ def render_page() -> None:
             color_accent=COLORS['accent_purple']
         )
 
-    st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
+    st.html("<div style='margin-top: 1.5rem;'></div>")
 
     # 2. Master Head-to-Head Benchmark Table
-    st.markdown(
+    st.html(
         f"""
         <div class="card-header">
             <span style="color: {COLORS['accent_cyan']};">{ICONS['bar_chart']}</span>
             Master Benchmark Scoreboard (Untouched Test Set: 2020–Present)
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
     master_benchmarks = [
@@ -146,7 +145,7 @@ def render_page() -> None:
     st.dataframe(pd.DataFrame(master_benchmarks), width="stretch", hide_index=True)
 
     # 3. Model Benchmark Visualizations
-    st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
+    st.html("<div style='margin-top: 1.5rem;'></div>")
     fig_m1, fig_m2, fig_m3 = create_model_performance_charts()
 
     col_v1, col_v2 = st.columns(2)
@@ -158,7 +157,7 @@ def render_page() -> None:
     st.plotly_chart(fig_m3, width="stretch")
 
     # 4. Basin-Wise Breakdown & Generalization Insights
-    st.markdown("<div style='margin-top: 1.25rem;'></div>", unsafe_allow_html=True)
+    st.html("<div style='margin-top: 1.25rem;'></div>")
     with st.expander("Model 1: +24h Intensity Performance by Basin (Test Set: 2020–Present)", expanded=True):
         st.markdown(
             """

@@ -41,7 +41,7 @@ def main():
     # 2. Build Sidebar Navigation
     with st.sidebar:
         # App Branding Header
-        st.markdown(
+        st.html(
             f"""
             <div style="padding: 0.5rem 0 1.25rem 0; border-bottom: 1px solid {COLORS['border_dark']}; margin-bottom: 1.25rem;">
                 <div style="display: flex; align-items: center; gap: 0.6rem;">
@@ -58,8 +58,7 @@ def main():
                     </div>
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         # Page Selection Menu
@@ -88,7 +87,7 @@ def main():
             label_visibility="collapsed"
         )
 
-        st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
+        st.html("<div style='margin-top: 1.5rem;'></div>")
 
         # System Health & Models Status Card
         models_status = check_all_models_present()
@@ -97,7 +96,7 @@ def main():
         status_color = COLORS['accent_teal'] if models_ok else COLORS['accent_amber']
         status_text = "All 7 Model Artifacts Present" if models_ok else f"Missing: {len(missing_models)}"
 
-        st.markdown(
+        st.html(
             f"""
             <div class="kpi-card" style="padding: 0.85rem; border-top: 2px solid {status_color}; margin-bottom: 1.25rem;">
                 <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: {COLORS['text_muted']}; margin-bottom: 0.4rem; display: flex; align-items: center; justify-content: space-between;">
@@ -112,19 +111,17 @@ def main():
                     3 Verified Task Datasets
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         # Persistent Sidebar Research Callout
-        st.markdown(
+        st.html(
             f"""
             <div style="font-size: 0.72rem; color: {COLORS['text_dim']}; line-height: 1.45; border-top: 1px solid {COLORS['border_dark']}; padding-top: 1rem;">
                 <strong style="color: {COLORS['text_muted']};">Research Prototype:</strong><br>
                 This application is designed for college-level research and AI demonstration using historical IBTrACS best-track data. It does not provide real-time operational weather warnings.
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
     # 3. Route to Selected Page

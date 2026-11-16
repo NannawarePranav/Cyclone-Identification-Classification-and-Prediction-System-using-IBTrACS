@@ -63,17 +63,16 @@ def render_page() -> None:
             color_accent=COLORS['accent_purple']
         )
 
-    st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
+    st.html("<div style='margin-top: 1.5rem;'></div>")
 
     # 2. Global Geospatial Activity Map
-    st.markdown(
+    st.html(
         f"""
         <div class="card-header">
             <span style="color: {COLORS['accent_cyan']};">{ICONS['globe']}</span>
             Global Tropical Cyclone Trajectories & Basin Climatology
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
     with st.spinner("Rendering global trajectory map..."):
@@ -85,47 +84,44 @@ def render_page() -> None:
     col_chart1, col_chart2 = st.columns(2)
 
     with col_chart1:
-        st.markdown(
+        st.html(
             f"""
             <div class="card-header">
                 <span style="color: {COLORS['accent_teal']};">{ICONS['bar_chart']}</span>
                 Observation Frequency by Oceanic Basin
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
         basin_fig = create_basin_distribution_chart(stats['basin_distribution'])
         st.plotly_chart(basin_fig, width="stretch")
 
     with col_chart2:
-        st.markdown(
+        st.html(
             f"""
             <div class="card-header">
                 <span style="color: {COLORS['accent_amber']};">{ICONS['calendar']}</span>
                 Historical Annual Cyclone Activity ({stats['season_range']})
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
         trend_fig = create_historical_trend_chart(df_mov)
         st.plotly_chart(trend_fig, width="stretch")
 
     # 4. Multi-Task Machine Learning Architecture Breakdown
-    st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
-    st.markdown(
+    st.html("<div style='margin-top: 1.5rem;'></div>")
+    st.html(
         f"""
         <div class="card-header">
             <span style="color: {COLORS['accent_cyan']};">{ICONS['cpu']}</span>
             Three-Task Machine Learning Architecture
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
     col_m1, col_m2, col_m3 = st.columns(3)
 
     with col_m1:
-        st.markdown(
+        st.html(
             f"""
             <div class="kpi-card" style="border-top: 3px solid {COLORS['accent_cyan']};">
                 <div style="font-size: 0.85rem; font-weight: 700; color: {COLORS['accent_cyan']}; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
@@ -141,12 +137,11 @@ def render_page() -> None:
                     <strong>Algorithms:</strong> Linear Regression, Random Forest, Hist-Gradient XGBoost.
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
     with col_m2:
-        st.markdown(
+        st.html(
             f"""
             <div class="kpi-card" style="border-top: 3px solid {COLORS['accent_teal']};">
                 <div style="font-size: 0.85rem; font-weight: 700; color: {COLORS['accent_teal']}; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
@@ -162,12 +157,11 @@ def render_page() -> None:
                     <strong>Validation metric:</strong> Mean Haversine track error in km.
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
     with col_m3:
-        st.markdown(
+        st.html(
             f"""
             <div class="kpi-card" style="border-top: 3px solid {COLORS['accent_amber']};">
                 <div style="font-size: 0.85rem; font-weight: 700; color: {COLORS['accent_amber']}; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
@@ -183,6 +177,5 @@ def render_page() -> None:
                     <strong>Test Performance:</strong> Accuracy (63.42%), Macro F1 (0.638).
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )

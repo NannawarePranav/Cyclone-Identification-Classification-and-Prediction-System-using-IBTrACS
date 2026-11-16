@@ -14,34 +14,30 @@ def render_header(title: str, subtitle: Optional[str] = None, page_badge: Option
     """Renders standardized top-of-page header with dark ocean aesthetic."""
     badge_html = f'<span class="kpi-badge">{page_badge}</span>' if page_badge else ""
     sub_html = f'<p class="page-subtitle">{subtitle}</p>' if subtitle else ""
-    
-    st.markdown(
-        f"""
-        <div style="margin-bottom: 1.5rem; border-bottom: 1px solid {COLORS['border_dark']}; padding-bottom: 1.25rem;">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-                <h1 class="page-title" style="margin: 0;">{title}</h1>
-                {badge_html}
-            </div>
-            {sub_html}
-        </div>
-        """,
-        unsafe_allow_html=True
+
+    header_html = (
+        f'<div style="margin-bottom: 1.5rem; border-bottom: 1px solid {COLORS["border_dark"]}; padding-bottom: 1.25rem;">'
+        f'<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">'
+        f'<h1 class="page-title" style="margin: 0;">{title}</h1>'
+        f'{badge_html}'
+        f'</div>'
+        f'{sub_html}'
+        f'</div>'
     )
+    st.html(header_html)
 
 
 def render_disclaimer() -> None:
     """Renders the required persistent research warning callout."""
-    st.markdown(
-        f"""
-        <div class="disclaimer-callout">
-            <span style="display: inline-flex; align-items: center; vertical-align: middle; margin-right: 0.5rem;">
-                {ICONS['shield_alert']}
-            </span>
-            <strong>RESEARCH & DEMONSTRATION NOTICE:</strong> {APP_DISCLAIMER}
-        </div>
-        """,
-        unsafe_allow_html=True
+    disclaimer_html = (
+        f'<div class="disclaimer-callout">'
+        f'<span style="display: inline-flex; align-items: center; vertical-align: middle; margin-right: 0.5rem;">'
+        f'{ICONS["shield_alert"]}'
+        f'</span>'
+        f'<strong>RESEARCH & DEMONSTRATION NOTICE:</strong> {APP_DISCLAIMER}'
+        f'</div>'
     )
+    st.html(disclaimer_html)
 
 
 def render_metric_card(
@@ -57,21 +53,19 @@ def render_metric_card(
     delta_html = f'<div style="font-size: 0.8rem; color: {COLORS["accent_teal"]}; margin-top: 0.25rem; font-weight: 500;">{delta}</div>' if delta else ""
     sub_html = f'<div style="font-size: 0.75rem; color: {COLORS["text_muted"]}; margin-top: 0.35rem;">{subvalue}</div>' if subvalue else ""
 
-    st.markdown(
-        f"""
-        <div class="kpi-card" style="border-top: 3px solid {color_accent};">
-            <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: {COLORS['text_muted']}; display: flex; align-items: center;">
-                {icon_html}{title}
-            </div>
-            <div style="font-size: 1.75rem; font-weight: 700; color: {COLORS['text_bright']}; font-family: 'Space Grotesk', 'Inter', sans-serif; margin-top: 0.4rem; letter-spacing: -0.02em;">
-                {value}
-            </div>
-            {delta_html}
-            {sub_html}
-        </div>
-        """,
-        unsafe_allow_html=True
+    card_html = (
+        f'<div class="kpi-card" style="border-top: 3px solid {color_accent};">'
+        f'<div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: {COLORS["text_muted"]}; display: flex; align-items: center;">'
+        f'{icon_html}{title}'
+        f'</div>'
+        f'<div style="font-size: 1.75rem; font-weight: 700; color: {COLORS["text_bright"]}; font-family: \'Space Grotesk\', \'Inter\', sans-serif; margin-top: 0.4rem; letter-spacing: -0.02em;">'
+        f'{value}'
+        f'</div>'
+        f'{delta_html}'
+        f'{sub_html}'
+        f'</div>'
     )
+    st.html(card_html)
 
 
 def render_info_banner(text: str, level: str = "info") -> None:
@@ -93,15 +87,13 @@ def render_info_banner(text: str, level: str = "info") -> None:
         bg_color = "rgba(16, 185, 129, 0.08)"
         icon = ICONS['shield_alert']
 
-    st.markdown(
-        f"""
-        <div style="background: {bg_color}; border-left: 3px solid {border_color}; border-radius: 4px; padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.85rem; color: {COLORS['text_secondary']}; display: flex; align-items: flex-start; gap: 0.6rem;">
-            <span style="flex-shrink: 0; margin-top: 0.15rem;">{icon}</span>
-            <div style="line-height: 1.5;">{text}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
+    banner_html = (
+        f'<div style="background: {bg_color}; border-left: 3px solid {border_color}; border-radius: 4px; padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.85rem; color: {COLORS["text_secondary"]}; display: flex; align-items: flex-start; gap: 0.6rem;">'
+        f'<span style="flex-shrink: 0; margin-top: 0.15rem;">{icon}</span>'
+        f'<div style="line-height: 1.5;">{text}</div>'
+        f'</div>'
     )
+    st.html(banner_html)
 
 
 def render_cyclone_selector(
