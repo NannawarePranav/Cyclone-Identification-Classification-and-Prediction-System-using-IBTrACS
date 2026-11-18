@@ -27,6 +27,23 @@ def render_header(title: str, subtitle: Optional[str] = None, page_badge: Option
     st.html(header_html)
 
 
+def render_pipeline_diagram():
+    """Readable process diagram without external assets or JavaScript."""
+    steps = [
+        ('01 · Data', 'NOAA IBTrACS cyclone observations'),
+        ('02 · Features', 'Wind history, position, pressure and time'),
+        ('03 · Models', 'Intensity · Movement · Development'),
+        ('04 · Predictions', 'Wind speed · Track · Development class'),
+    ]
+    cards = ''.join(
+        f'<li style="flex:1 1 170px; list-style:none; padding:1rem; border:1px solid {COLORS["border"]}; '
+        f'border-radius:6px; background:{COLORS["bg_card"]};">'
+        f'<strong style="color:{COLORS["cyan"]};">{title}</strong><br>'
+        f'<span style="font-size:.85rem;">{description}</span></li>' for title,description in steps)
+    st.html(f'<ol aria-label="Prediction pipeline, read in numbered order" style="display:flex;flex-wrap:wrap;gap:.6rem;padding:0;">{cards}</ol>')
+    st.caption('Data → Features → Three models → Predictions. Recorded future outcomes are used only for training labels and evaluation.')
+
+
 def render_disclaimer() -> None:
     """Renders the required persistent research warning callout."""
     disclaimer_html = (
@@ -34,7 +51,7 @@ def render_disclaimer() -> None:
         f'<span style="display: inline-flex; align-items: center; vertical-align: middle; margin-right: 0.5rem;">'
         f'{ICONS["shield_alert"]}'
         f'</span>'
-        f'<strong>RESEARCH & DEMONSTRATION NOTICE:</strong> {APP_DISCLAIMER}'
+        f'<span><strong>About the data:</strong> {APP_DISCLAIMER}</span>'
         f'</div>'
     )
     st.html(disclaimer_html)
@@ -46,11 +63,12 @@ def render_metric_card(
     subvalue: Optional[str] = None,
     delta: Optional[str] = None,
     color_accent: str = COLORS['accent_cyan'],
-    icon_key: Optional[str] = None
+    icon_key: Optional[str] = None,
+    delta_color: Optional[str] = None
 ) -> None:
     """Renders a styled dark ocean KPI metric card."""
     icon_html = f'<span style="opacity: 0.85; margin-right: 0.4rem; display: inline-flex; align-items: center;">{ICONS.get(icon_key, "")}</span>' if icon_key else ""
-    delta_html = f'<div style="font-size: 0.8rem; color: {COLORS["accent_teal"]}; margin-top: 0.25rem; font-weight: 500;">{delta}</div>' if delta else ""
+    delta_html = f'<div style="font-size: 0.8rem; color: {delta_color or COLORS["accent_teal"]}; margin-top: 0.25rem; font-weight: 500;">{delta}</div>' if delta else ""
     sub_html = f'<div style="font-size: 0.75rem; color: {COLORS["text_muted"]}; margin-top: 0.35rem;">{subvalue}</div>' if subvalue else ""
 
     card_html = (
@@ -96,138 +114,142 @@ def render_info_banner(text: str, level: str = "info") -> None:
     st.html(banner_html)
 
 
+SELECTION_STATE_KEY = 'cyclone_selection'
+
+
+def _remember_selection(field, widget_key):
+    """Copy widget changes into durable state that survives page-widget cleanup."""
+    selection = dict(st.session_state[SELECTION_STATE_KEY])
+    selection[field] = st.session_state[widget_key]
+    if field == 'sid':
+        selection['timestamp'] = None
+    elif field in {'basin', 'season', 'split', 'search'}:
+        selection['filters_changed'] = True
+    st.session_state[SELECTION_STATE_KEY] = selection
+
+
 def render_cyclone_selector(
     dataset_type: str = 'intensity',
-    key_prefix: str = 'sel'
+    key_prefix: str = 'sel',
+    eligible_observations: Optional[pd.DataFrame] = None,
 ) -> Tuple[Optional[str], Optional[pd.DataFrame], Optional[pd.Series]]:
-    """
-    Standardized, interactive cyclone observation selector.
-    Filters by Basin, Season, Cyclone SID, and Observation Timestamp.
-    Returns:
-        (selected_sid, observations_dataframe, selected_observation_row)
-    """
-    with st.expander("Filter & Select Cyclone Observation", expanded=True):
-        catalog = get_cyclone_catalog(dataset_type=dataset_type)
+    """Share selection across models, replay and an optionally restricted demo cohort."""
+    catalogs = {kind: get_cyclone_catalog(kind) for kind in ('intensity', 'movement', 'development')}
+    catalog = catalogs[dataset_type]
+    # Common widget bounds preserve filters even when model cohorts differ.
+    min_season = min(int(c.SEASON.min()) for c in catalogs.values())
+    max_season = max(int(c.SEASON.max()) for c in catalogs.values())
+    basin_options = ['ALL'] + sorted(set().union(*(set(c.BASIN.dropna()) for c in catalogs.values())))
+    if eligible_observations is not None:
+        catalog = catalog[catalog.SID.isin(eligible_observations.SID)].copy()
+        counts = eligible_observations.groupby('SID').ISO_TIME.nunique()
+        catalog['OBS_COUNT'] = catalog.SID.map(counts)
+    if SELECTION_STATE_KEY not in st.session_state:
+        st.session_state[SELECTION_STATE_KEY] = {
+            'basin': 'ALL', 'season': (max(min_season, 2020), max_season),
+            'split': 'TEST', 'search': '', 'sid': None, 'timestamp': None,
+        }
+    selection = dict(st.session_state[SELECTION_STATE_KEY])
+    filters_changed = selection.pop('filters_changed', False)
+    st.session_state[SELECTION_STATE_KEY] = selection
 
-        col1, col2, col3 = st.columns([1.2, 1.2, 1.6])
+    def widget_args(field, value):
+        key = f'{key_prefix}_{field}'
+        # Rehydrate before widget creation: changes were committed by on_change.
+        st.session_state[key] = value
+        return {'key': key, 'on_change': _remember_selection, 'args': (field, key)}
 
-        # 1. Basin Filter
-        available_basins = sorted(catalog['BASIN'].dropna().unique().tolist())
-        basin_options = ['ALL'] + available_basins
-        basin_labels = {b: (f"{b} — {BASIN_NAMES.get(b, b)}" if b != 'ALL' else "All Oceanic Basins") for b in basin_options}
+    with st.expander('Filter & Select Cyclone Observation', expanded=True):
+        st.caption('Your filters, cyclone and observation carry across Models 1, 2, 3, Historical Cyclone Replay and the Guided Presentation Demo.')
+        c1, c2, c3 = st.columns([1.2, 1.2, 1.6])
+        with c1:
+            basin = st.selectbox('Oceanic Basin', basin_options,
+                format_func=lambda b: f'{b} — {BASIN_NAMES.get(b,b)}' if b != 'ALL' else 'All Oceanic Basins',
+                **widget_args('basin', selection['basin']))
+        with c2:
+            seasons = st.slider('Season Range (Years)', min_value=min_season, max_value=max_season,
+                **widget_args('season', selection['season']))
+        with c3:
+            labels = {'ALL':'ALL', 'TEST':'TEST (2020+)', 'VAL':'VAL (2015–2019)',
+                      'TRAIN':f"TRAIN ({int(catalogs[dataset_type].SEASON.min())}–2014)"}
+            split = st.selectbox('Data Partition', list(labels), format_func=labels.get,
+                **widget_args('split', selection['split']))
+        search = st.text_input('Search cyclone name or ID', placeholder='Try AMPHAN, FANI or a storm ID',
+            **widget_args('search', selection['search']))
+        st.caption('Search respects the filters above. For older storms, widen the season range and choose ALL partitions.')
+        filtered = catalog[catalog.SEASON.between(*seasons)]
+        if basin != 'ALL':
+            filtered = filtered[filtered.BASIN.eq(basin)]
+        if split != 'ALL':
+            filtered = filtered[filtered.SPLIT.eq(split)]
+        if search.strip():
+            filtered = filtered[filtered.NAME.str.contains(search.strip(),case=False,regex=False) |
+                                filtered.SID.str.contains(search.strip(),case=False,regex=False)]
+        if filtered.empty:
+            st.warning('No cyclones match these filters on this page. Your shared selection is preserved; adjust the filters or switch back.')
+            return None, None, None
 
-        with col1:
-            selected_basin = st.selectbox(
-                "Oceanic Basin",
-                options=basin_options,
-                format_func=lambda b: basin_labels.get(b, b),
-                key=f"{key_prefix}_basin"
-            )
+        options = filtered.SID.tolist()
+        desired_sid = selection['sid']
+        if desired_sid is None or (filters_changed and desired_sid not in options):
+            desired_sid = options[0]
+            selection.update(sid=desired_sid, timestamp=None)
+            st.session_state[SELECTION_STATE_KEY] = selection
+        available = desired_sid in options
+        if not available:
+            st.info(f'The selected cyclone ({desired_sid}) is unavailable on this page with these filters. '
+                    'Choose another cyclone to continue, or switch back to keep your original selection.')
+        storm_column, obs_column = st.columns(2)
+        lookup = filtered.set_index('SID')
+        def format_storm(sid):
+            r = lookup.loc[sid]
+            return f"{r['NAME']} · {r['SEASON']} {r['BASIN']} · {sid} ({r['OBS_COUNT']} obs)"
+        with storm_column:
+            sid = st.selectbox(f'Cyclone (Total matching: {len(filtered):,})', options,
+                index=None, placeholder='Choose an available cyclone', format_func=format_storm,
+                **widget_args('sid', desired_sid if available else None))
+        if sid is None:
+            return None, None, None
 
-        # 2. Season Range Filter
-        min_season = int(catalog['SEASON'].min())
-        max_season = int(catalog['SEASON'].max())
-        default_range = (max(min_season, 2020), max_season)
-
-        with col2:
-            season_range = st.slider(
-                "Season Range (Years)",
-                min_value=min_season,
-                max_value=max_season,
-                value=default_range,
-                key=f"{key_prefix}_season"
-            )
-
-        # 3. Data Partition Filter (with dataset-specific temporal cohort)
-        if dataset_type == 'movement':
-            split_options = ['ALL', 'TEST (2020+)', 'VAL (2015–2019)', 'TRAIN (1970–2014)']
+        observations = (get_observations_for_cyclone(sid, dataset_type=dataset_type)
+                        if eligible_observations is None else
+                        eligible_observations[eligible_observations.SID.eq(sid)].sort_values('ISO_TIME').reset_index(drop=True))
+        if observations.empty:
+            st.warning('This cyclone has no usable observations on this page. Your selection is preserved.')
+            return sid, None, None
+        times = pd.to_datetime(observations.ISO_TIME, utc=True)
+        assert not times.duplicated().any(), f'Duplicate observation timestamps for {sid}'
+        timestamps = [t.isoformat() for t in times]
+        wanted = selection['timestamp']
+        fallback = False
+        if wanted is None:
+            chosen = timestamps[len(timestamps)//2]
+            selection['timestamp'] = chosen
+            st.session_state[SELECTION_STATE_KEY] = selection
+        elif wanted in timestamps:
+            chosen = wanted
         else:
-            split_options = ['ALL', 'TEST (2020+)', 'VAL (2015–2019)', 'TRAIN (1980–2014)']
-
-        with col3:
-            split_choice = st.selectbox(
-                "Data Partition",
-                options=split_options,
-                index=1,  # Default to TEST
-                key=f"{key_prefix}_split"
-            )
-
-        # Filter catalog
-        filtered_catalog = catalog.copy()
-        if selected_basin != 'ALL':
-            filtered_catalog = filtered_catalog[filtered_catalog['BASIN'] == selected_basin]
-
-        filtered_catalog = filtered_catalog[
-            (filtered_catalog['SEASON'] >= season_range[0]) &
-            (filtered_catalog['SEASON'] <= season_range[1])
-        ]
-
-        if split_choice.startswith('TEST'):
-            filtered_catalog = filtered_catalog[filtered_catalog['SPLIT'] == 'TEST']
-        elif split_choice.startswith('VAL'):
-            filtered_catalog = filtered_catalog[filtered_catalog['SPLIT'] == 'VAL']
-        elif split_choice.startswith('TRAIN'):
-            filtered_catalog = filtered_catalog[filtered_catalog['SPLIT'] == 'TRAIN']
-
-        if filtered_catalog.empty:
-            st.warning("No cyclones match the selected filters. Please expand your criteria.")
-            return None, None, None
-
-        # 4. Cyclone SID Selection
-        col_storm, col_obs = st.columns([2, 2])
-
-        storm_options = filtered_catalog['SID'].tolist()
-        def format_storm(sid: str) -> str:
-            r = filtered_catalog[filtered_catalog['SID'] == sid].iloc[0]
-            basin_short = r['BASIN']
-            season = r['SEASON']
-            obs = r['OBS_COUNT']
-            peak = f"{int(r['PEAK_WIND_KTS'])} kt" if 'PEAK_WIND_KTS' in r and pd.notna(r['PEAK_WIND_KTS']) else ""
-            peak_str = f" | Peak: {peak}" if peak else ""
-            return f"{sid} — {season} {basin_short} ({obs} obs{peak_str})"
-
-        with col_storm:
-            selected_sid = st.selectbox(
-                f"Cyclone Storm ID (Total matching: {len(filtered_catalog):,})",
-                options=storm_options,
-                format_func=format_storm,
-                key=f"{key_prefix}_sid"
-            )
-
-        if not selected_sid:
-            return None, None, None
-
-        # 5. Load Unique Physical Track Observations for this Cyclone
-        obs_df = get_observations_for_cyclone(selected_sid, dataset_type=dataset_type)
-        if obs_df.empty:
-            st.error(f"No records found for storm ID {selected_sid}")
-            return selected_sid, None, None
-
-        # Assert no duplicate physical timestamps exist
-        assert not obs_df.duplicated(subset=['ISO_TIME']).any(), (
-            f"Non-unique physical timestamps detected in track sequence for {selected_sid}"
-        )
-
-        def format_obs(idx: int) -> str:
-            row = obs_df.iloc[idx]
-            iso = str(row['ISO_TIME'])
-            lat = row.get('LAT', 0.0)
-            lon = row.get('LON_NORM', row.get('LON', 0.0))
-            wind = row.get('CURRENT_USA_WIND', None)
-            wind_str = f" | {int(wind)} kt" if pd.notna(wind) else ""
-            return f"Step {idx+1}/{len(obs_df)}: {iso} (Lat {lat:.1f}°, Lon {lon:.1f}°{wind_str})"
-
-        with col_obs:
-            selected_idx = st.selectbox(
-                f"Observation Timestamp ({len(obs_df)} available steps)",
-                options=list(range(len(obs_df))),
-                index=min(len(obs_df) // 2, len(obs_df) - 1),  # pick a middle step by default
-                format_func=format_obs,
-                key=f"{key_prefix}_obs_idx"
-            )
-
-        selected_row = obs_df.iloc[selected_idx]
-        return selected_sid, obs_df, selected_row
+            # Use the latest available observation at/before the requested time.
+            earlier = [t for t in timestamps if pd.Timestamp(t) <= pd.Timestamp(wanted)]
+            chosen = max(earlier, key=pd.Timestamp) if earlier else min(timestamps, key=pd.Timestamp)
+            fallback = True
+            # Keep the requested time in shared state so returning restores it.
+        positions = {timestamp: i for i,timestamp in enumerate(timestamps)}
+        def format_observation(timestamp):
+            i = positions[timestamp]
+            row = observations.iloc[i]
+            wind = row.get('CURRENT_USA_WIND')
+            wind_text = f' | {int(wind)} kt' if pd.notna(wind) else ''
+            return f"Step {i+1}/{len(observations)}: {pd.Timestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')} UTC (Lat {row.LAT:.1f}°, Lon {row.LON_NORM:.1f}°{wind_text})"
+        with obs_column:
+            timestamp = st.selectbox(f'Observation Timestamp ({len(observations)} available steps)', timestamps,
+                format_func=format_observation, **widget_args('timestamp', chosen))
+        if fallback:
+            requested_text = pd.Timestamp(wanted).strftime('%Y-%m-%d %H:%M UTC')
+            chosen_text = pd.Timestamp(chosen).strftime('%Y-%m-%d %H:%M UTC')
+            st.info(f'{requested_text} is unavailable on this page. Showing {chosen_text} for the same cyclone. '
+                    'Your original time is preserved when you switch back; choose a timestamp here to change it across models.')
+        return sid, observations, observations.iloc[positions[timestamp]]
 
 
 def render_observation_summary(row: pd.Series, dataset_type: str = 'intensity') -> None:

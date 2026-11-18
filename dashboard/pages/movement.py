@@ -17,6 +17,7 @@ from dashboard.components import (
 from dashboard.inference import run_movement_forecast, calculate_haversine_error_km
 from dashboard.data_loader import get_horizon_targets_for_observation
 from dashboard.charts import create_trajectory_map
+from dashboard.error_display import format_error
 
 
 def render_page() -> None:
@@ -84,6 +85,7 @@ def render_page() -> None:
 
         kp1, kp2, kp3 = st.columns(3)
         cols_h = [(6, kp1, COLORS['accent_cyan']), (12, kp2, COLORS['accent_teal']), (24, kp3, COLORS['accent_amber'])]
+        error_labels = {}
 
         for h, col, color in cols_h:
             h_info = horizons_data[h]
@@ -98,7 +100,12 @@ def render_page() -> None:
                     np.array([gt_lat]), np.array([gt_lon]),
                     np.array([lat_p]), np.array([lon_p])
                 )[0])
-                kpi_sub = f"GT: {gt_lat:.2f}°, {gt_lon:.2f}° | Track Error: {err_km:.1f} km"
+                actual_displacement = float(calculate_haversine_error_km(
+                    np.array([curr_lat]), np.array([curr_lon]),
+                    np.array([gt_lat]), np.array([gt_lon])
+                )[0])
+                error_labels[h] = format_error(err_km, actual_displacement, 'km')
+                kpi_sub = f"GT: {gt_lat:.2f}°, {gt_lon:.2f}° | Track Error: {error_labels[h]}"
             else:
                 kpi_sub = f"Predicted Travel: {dist_km:.1f} km from eye (dx: {h_info['dx_km']:+.0f} km, dy: {h_info['dy_km']:+.0f} km)"
 
@@ -111,6 +118,8 @@ def render_page() -> None:
                     color_accent=color,
                     icon_key="compass"
                 )
+
+        st.caption("Track error % = position error ÷ actual displacement from the current eye × 100. It can exceed 100%; N/A% when actual displacement is zero or unavailable.")
 
         # 5. Interactive Trajectory Map
         st.html("<div style='margin-top: 1.5rem;'></div>")
@@ -126,7 +135,7 @@ def render_page() -> None:
             forecast_results=horizons_data,
             past_track=past_track
         )
-        st.plotly_chart(map_fig, width="stretch")
+        st.plotly_chart(map_fig, width="stretch", theme=None)
 
         # 6. Detailed Tabular Coordinate Forecast
         st.html("<div style='margin-top: 1.25rem;'></div>")
@@ -148,7 +157,7 @@ def render_page() -> None:
             'Predicted dy (North-South)': '0.0 km',
             'Predicted Travel Distance from Eye': '0.0 km',
             'Actual Future Position (Ground Truth)': f"{curr_lat:.3f}°, {curr_lon:.3f}° (Observed)",
-            'Forecast Track Error (km)': '0.0 km (Reference)'
+            'Forecast Track Error (% and km)': 'N/A% (0.0 km; current reference)'
         })
 
         # Future horizons
@@ -163,11 +172,7 @@ def render_page() -> None:
                 gt_lat = horizon_targets[h]['target_lat']
                 gt_lon = horizon_targets[h]['target_lon']
                 gt_str = f"{gt_lat:.3f}°, {gt_lon:.3f}°"
-                err_km = float(calculate_haversine_error_km(
-                    np.array([gt_lat]), np.array([gt_lon]),
-                    np.array([lat_p]), np.array([lon_p])
-                )[0])
-                err_str = f"{err_km:.1f} km"
+                err_str = error_labels[h]
 
             table_rows.append({
                 'Lead Horizon': f"+{h}h Forecast",
@@ -176,7 +181,7 @@ def render_page() -> None:
                 'Predicted dy (North-South)': f"{h_info['dy_km']:+.1f} km",
                 'Predicted Travel Distance from Eye': f"{h_info['haversine_distance_km']:.1f} km",
                 'Actual Future Position (Ground Truth)': gt_str,
-                'Forecast Track Error (km)': err_str
+                'Forecast Track Error (% and km)': err_str
             })
 
         table_df = pd.DataFrame(table_rows)

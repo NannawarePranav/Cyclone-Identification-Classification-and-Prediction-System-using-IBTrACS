@@ -8,11 +8,11 @@ icons, and domain mappings according to design-system/cyclone-atlas/MASTER.md.
 import streamlit as st
 
 # Application Branding
-APP_NAME = "CYCLONE ATLAS"
-APP_SUBTITLE = "Global Tropical Cyclone Intelligence"
+APP_NAME = "Prediction of Different Tropical Cyclone Patterns"
+APP_SUBTITLE = "Intensity · Movement · Development"
 APP_DISCLAIMER = (
-    "Research prototype using historical NOAA IBTrACS data. "
-    "Predictions are experimental and are not official weather warnings."
+    "Predictions use recorded NOAA IBTrACS observations for evaluation and demonstration; "
+    "they are not official weather warnings."
 )
 
 # Dark Ocean Scientific Color Tokens
@@ -28,7 +28,7 @@ COLORS = {
     'text_bright': '#F1F5F9',      # Alias for headers and bright text
     'text_muted': '#94A3B8',       # Subtitles, units, axis titles
     'text_secondary': '#94A3B8',   # Alias for secondary body text
-    'text_dim': '#64748B',         # Footnotes, timestamps, inactive
+    'text_dim': '#94A3B8',         # Readable footnotes and timestamps on dark surfaces
     'cyan': '#00D2D3',             # Primary accent (+6h forecast, observed track)
     'accent_cyan': '#00D2D3',      # Primary accent alias
     'teal': '#10B981',             # Secondary accent (+12h forecast, weakening)
@@ -120,9 +120,11 @@ def apply_custom_css():
 
     /* Main Container Spacing */
     .block-container {{
-        padding-top: 1.5rem !important;
+        padding-top: 5rem !important;
         padding-bottom: 2rem !important;
-        max-width: 95% !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+        max-width: 1440px !important;
     }}
 
     /* Headings */
@@ -134,7 +136,7 @@ def apply_custom_css():
     }}
 
     /* Scientific Metric Cards */
-    .metric-card {{
+    .metric-card, .kpi-card {{
         background: {COLORS['bg_card']};
         border: 1px solid {COLORS['border']};
         border-radius: 6px;
@@ -142,7 +144,7 @@ def apply_custom_css():
         margin-bottom: 12px;
         transition: border-color 0.2s ease;
     }}
-    .metric-card:hover {{
+    .metric-card:hover, .kpi-card:hover {{
         border-color: {COLORS['border_active']};
     }}
     .metric-title {{
@@ -180,12 +182,12 @@ def apply_custom_css():
     }}
 
     /* Persistent Disclaimer Banner */
-    .disclaimer-banner {{
+    .disclaimer-banner, .disclaimer-callout {{
         background: rgba(245, 158, 11, 0.08);
         border: 1px solid rgba(245, 158, 11, 0.25);
         border-radius: 4px;
         padding: 8px 12px;
-        font-size: 0.75rem;
+        font-size: 0.82rem;
         color: {COLORS['amber']};
         display: flex;
         align-items: center;
@@ -206,7 +208,7 @@ def apply_custom_css():
     }}
 
     /* Button Styling */
-    .stButton > button {{
+    .stButton button {{
         background-color: {COLORS['bg_card']};
         color: {COLORS['cyan']} !important;
         border: 1px solid {COLORS['cyan']} !important;
@@ -217,10 +219,17 @@ def apply_custom_css():
         padding: 8px 16px;
         transition: all 0.2s ease;
     }}
-    .stButton > button:hover {{
+    .stButton button:hover {{
         background-color: {COLORS['cyan']};
         color: {COLORS['bg_base']} !important;
         border-color: {COLORS['cyan']} !important;
+    }}
+    .stButton button[kind="primary"] {{
+        background-color: {COLORS['cyan']} !important;
+        color: {COLORS['bg_base']} !important;
+    }}
+    .stButton button[kind="primary"]:hover {{
+        background-color: {COLORS['border_active']} !important;
     }}
 
     /* Dataframe Table Customization */
@@ -241,6 +250,53 @@ def apply_custom_css():
     div[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {{
         background-color: {COLORS['bg_card']};
         border-color: {COLORS['border']};
+    }}
+    .page-title {{
+        font-size: clamp(1.4rem, 2.2vw, 2rem);
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }}
+    .page-subtitle {{
+        color: {COLORS['text_muted']};
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin: 0.65rem 0 0;
+    }}
+    .card-header {{
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0.6rem 0 1rem;
+    }}
+    .kpi-badge {{
+        display: inline-block;
+        background: {COLORS['bg_card']};
+        border: 1px solid {COLORS['border']};
+        color: {COLORS['accent_cyan']};
+        padding: 0.3rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }}
+    .kpi-card {{ overflow-wrap: anywhere; }}
+    button:focus-visible, [role="radio"]:focus-visible {{
+        outline: 2px solid {COLORS['border_active']} !important;
+        outline-offset: 3px;
+    }}
+    @media (max-width: 1100px) {{
+        [data-testid="stMain"] [data-testid="stHorizontalBlock"] {{ flex-wrap: wrap; }}
+        [data-testid="stMain"] [data-testid="stColumn"] {{
+            flex: 1 1 240px !important;
+            min-width: min(240px, 100%) !important;
+        }}
+    }}
+    @media (max-width: 640px) {{
+        .block-container {{ padding-left: 1rem !important; padding-right: 1rem !important; }}
+    }}
+    @media (prefers-reduced-motion: reduce) {{
+        *, *::before, *::after {{ transition: none !important; animation: none !important; }}
     }}
     </style>
     """

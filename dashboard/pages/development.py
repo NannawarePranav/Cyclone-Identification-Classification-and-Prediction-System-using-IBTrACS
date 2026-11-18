@@ -16,17 +16,22 @@ from dashboard.components import (
     render_info_banner
 )
 from dashboard.inference import run_development_forecast
+from dashboard.model_loader import load_development_model
 from dashboard.charts import create_development_probability_chart
 
 
 def render_page() -> None:
     """Renders the Cyclone Atlas Development Pattern Classification page."""
     render_header(
-        title="Cyclone Development Pattern Classification",
-        subtitle="24-Hour Intensification Regime Classification: Strengthening, Stable, or Weakening",
-        page_badge="Model 3 — CycloneClassifier"
+        title="Development Classification",
+        subtitle="Will the cyclone strengthen, remain stable, or weaken over the next 24 hours?",
+        page_badge="Model 3 · +24 hours"
     )
     render_disclaimer()
+    st.caption(
+        "Based on the change in sustained wind over 24 hours: "
+        "Strengthening ≥ +10 kt · Stable between −10 and +10 kt · Weakening ≤ −10 kt."
+    )
 
     # 1. Observation Selector
     sid, obs_df, selected_row = render_cyclone_selector(dataset_type='development', key_prefix='dev')
@@ -44,22 +49,11 @@ def render_page() -> None:
     )
     render_observation_summary(selected_row, dataset_type='development')
 
-    # 3. Uncalibrated Probability Methodological Notice
-    render_info_banner(
-        text=(
-            "<strong>Important Methodological Note on Probabilities:</strong> "
-            "Model 3 generates class probabilities using the XGBoost <code>multi:softprob</code> objective. "
-            "These values represent empirical softmax decision outputs and have <em>not</em> undergone post-hoc isotonic or Platt calibration. "
-            "They provide effective relative ordering of evolutionary regimes but should not be interpreted as absolute meteorological likelihoods."
-        ),
-        level="warning"
-    )
-
     # 4. Classification Trigger Controls
     st.html("<div style='margin-top: 1rem;'></div>")
     c1, c2 = st.columns([1.5, 3])
     with c1:
-        run_btn = st.button("Classify Development Pattern", type="primary", width="stretch")
+        run_btn = st.button("Classify Development", type="primary", width="stretch")
     with c2:
         split_badge = selected_row.get('SPLIT', 'UNKNOWN')
         st.caption(f"Storm SID: `{selected_row.get('SID', 'N/A')}` | Split: **{split_badge}** | Horizon: **+24 Hours**")
@@ -87,7 +81,7 @@ def render_page() -> None:
             f"""
             <div class="card-header">
                 <span style="color: {class_color};">{ICONS['activity']}</span>
-                Predicted 24-Hour Evolutionary Regime
+                Predicted Development · Next 24 Hours
             </div>
             """
         )
@@ -97,18 +91,18 @@ def render_page() -> None:
 
         with col_res1:
             render_metric_card(
-                title="Predicted Regime (+24h)",
+                title="Predicted Development (+24h)",
                 value=pred_class,
-                subvalue=f"Confidence: {winning_prob:.1f}% raw probability",
+                subvalue="Based on the selected observation and past wind history",
                 color_accent=class_color,
                 icon_key="activity"
             )
 
         with col_res2:
             render_metric_card(
-                title="Model Confidence (Softmax)",
+                title="Model Score",
                 value=f"{winning_prob:.1f}%",
-                subvalue=f"Relative to {len(probs)} candidate classes",
+                subvalue="Uncalibrated probability for the predicted class",
                 color_accent=COLORS['accent_cyan'],
                 icon_key="shield_alert"
             )
@@ -126,10 +120,11 @@ def render_page() -> None:
                 gt_color = COLORS['accent_rose']
 
             render_metric_card(
-                title="Ground Truth Regime",
+                title="Observed Development",
                 value=gt_str,
                 subvalue=sub_str,
                 delta="Prediction Matches" if gt_label == pred_class else ("Misclassified" if pd.notna(gt_label) else None),
+                delta_color=gt_color,
                 color_accent=gt_color,
                 icon_key="compass"
             )
@@ -140,12 +135,13 @@ def render_page() -> None:
             f"""
             <div class="card-header">
                 <span style="color: {COLORS['accent_cyan']};">{ICONS['bar_chart']}</span>
-                Decision Probability Distribution Across Classes
+                Model Scores for Each Development Class
             </div>
             """
         )
         prob_fig = create_development_probability_chart(probs)
         st.plotly_chart(prob_fig, width="stretch")
+        st.caption("Scores are uncalibrated model probabilities, not measured chances of a weather event.")
 
         # 7. Physical Regime Definitions & Manifest Reference
         st.html("<div style='margin-top: 1.25rem;'></div>")
@@ -187,7 +183,7 @@ def render_page() -> None:
                         WEAKENING
                     </div>
                     <div style="font-size: 0.78rem; color: {COLORS['text_secondary']};">
-                        Defined as rapid or gradual decay with 24-hour wind decrease of <strong>Δ ≤ -10 kt</strong>.
+                        Defined as a 24-hour wind decrease of <strong>Δ ≤ -10 kt</strong>.
                     </div>
                 </div>
                 """
@@ -195,12 +191,7 @@ def render_page() -> None:
 
         # 8. Feature Inputs Inspector
         with st.expander("Inspect Model 3 Input Features", expanded=False):
-            m3_features = [
-                'CURRENT_USA_WIND', 'PAST_USA_WIND_6H', 'PAST_USA_WIND_12H',
-                'HAS_PAST_USA_WIND_6H', 'HAS_PAST_USA_WIND_12H',
-                'WIND_CHANGE_PAST_6H', 'WIND_CHANGE_PAST_12H',
-                'LAT', 'LON_NORM', 'DIST2LAND', 'BASIN', 'NATURE'
-            ]
+            m3_features = list(load_development_model().feature_names_in_)
             f_vals = {}
             for f in m3_features:
                 if f in selected_row:
@@ -208,3 +199,11 @@ def render_page() -> None:
                     f_vals[f] = [f"{v:.3f}" if isinstance(v, float) else str(v)]
             st.dataframe(pd.DataFrame(f_vals), width="stretch", hide_index=True)
             st.caption("Target definition: `reports/model_feature_manifest.md` | Model artifact: `models/xgboost/m3_xgboost.joblib`")
+
+        st.divider()
+        st.caption(
+            "- The prediction uses wind history, location and the selected history/pressure features. "
+            "The recorded outcome is shown only for comparison, never as a model input.\n"
+            "- Class scores are uncalibrated: a 70% score does not establish a measured 70% likelihood.\n"
+            "- The ±10-knot change thresholds over 24 hours define the three development classes."
+        )

@@ -1,0 +1,348 @@
+{
+  "schema_version": 1,
+  "generated_utc": "2026-11-17T16:48:28.083400+00:00",
+  "artifacts": {
+    "models/xgboost/m1_xgboost_12h.joblib": "adba0ef5b0f7c51cd6736c1c706a3356809aabf76c3b2d965a4521e78eb2248a",
+    "models/xgboost/m1_xgboost_24h.joblib": "ddf53957e75a837e6c83cdc58d7287893046dcda1d0436f9c7f43db7ea4f889f",
+    "models/xgboost/m1_xgboost_6h.joblib": "e3b43e4c9825876aeeb90cd64d1007e39bfa4f1de6f7a4ae1d2b452996b38608",
+    "models/xgboost/m2_xgboost_12h.joblib": "cd9573ed8331bbbb4abfca9398b808de93d28f648b12e465a2ae4150cfc0c245",
+    "models/xgboost/m2_xgboost_24h.joblib": "ba07d2c95645beef0d5d824917c71c77c4b1321a52e3d2dc094c1a24bcc48085",
+    "models/xgboost/m2_xgboost_6h.joblib": "c1b1111fbb7c83b13d33e8090ba6aa978843cce17d41120ce6e0d64dca5d85d8",
+    "models/xgboost/m3_xgboost.joblib": "915a58855e9af90702c3f1d3da055a0711a217b43d010b6f49c9b09cb4204832",
+    "processed/model1_intensity.parquet": "2fbaa9b18fcc489eb0c5a18e89fb5acac6a5391518556d0b8560dfb02e60ae18",
+    "processed/model2_movement.parquet": "0d1a74b3cecbe04404a73dc55290e34d45cc3e0916558c108a6e947197acf952",
+    "processed/model3_development_enriched.parquet": "f4b8e4bea7068b01a8dd92db2960eedca485560a10d06fe48ab21f0c1322bc59",
+    "models/archive/pre_development_v2/m3_xgboost.joblib": "ae48be3f32a88fc813f5f50ce606512305a54dedd46bbd49e0b4cb028e4a0c92"
+  },
+  "records": [
+    {
+      "task": 1,
+      "horizon": 6,
+      "count": 14175,
+      "model": "XGBoost",
+      "metric": "Wind MAE",
+      "unit": "kt",
+      "value": 3.427179241617731,
+      "baseline_name": "Persistence",
+      "baseline": 4.023985890652558,
+      "skill_percent": 14.831231153696823
+    },
+    {
+      "task": 1,
+      "horizon": 12,
+      "count": 13651,
+      "model": "XGBoost",
+      "metric": "Wind MAE",
+      "unit": "kt",
+      "value": 5.707244624620689,
+      "baseline_name": "Persistence",
+      "baseline": 7.5023807779649845,
+      "skill_percent": 23.927553219062613
+    },
+    {
+      "task": 1,
+      "horizon": 24,
+      "count": 12612,
+      "model": "XGBoost",
+      "metric": "Wind MAE",
+      "unit": "kt",
+      "value": 9.584609358037724,
+      "baseline_name": "Persistence",
+      "baseline": 13.308357120202981,
+      "skill_percent": 27.980521776894285
+    },
+    {
+      "task": 2,
+      "horizon": 6,
+      "count": 16574,
+      "model": "XGBoost",
+      "metric": "Mean track error",
+      "unit": "km",
+      "value": 36.60173876463476,
+      "baseline_name": "Constant velocity",
+      "baseline": 38.777040225249465,
+      "skill_percent": 5.609766624731371
+    },
+    {
+      "task": 2,
+      "horizon": 12,
+      "count": 15993,
+      "model": "XGBoost",
+      "metric": "Mean track error",
+      "unit": "km",
+      "value": 79.5797050724248,
+      "baseline_name": "Constant velocity",
+      "baseline": 87.16822210801824,
+      "skill_percent": 8.70560033470661
+    },
+    {
+      "task": 2,
+      "horizon": 24,
+      "count": 14835,
+      "model": "XGBoost",
+      "metric": "Mean track error",
+      "unit": "km",
+      "value": 181.6044664746015,
+      "baseline_name": "Constant velocity",
+      "baseline": 208.43394856958645,
+      "skill_percent": 12.871934864309221
+    },
+    {
+      "task": 3,
+      "horizon": 24,
+      "count": 12612,
+      "model": "XGBoost",
+      "metric": "Accuracy",
+      "unit": "%",
+      "value": 64.05011100539168,
+      "baseline_name": "Always Stable",
+      "baseline": 41.30193466539803,
+      "macro_f1": 0.6455971272563931,
+      "baseline_macro_f1": 0.19486373753811048
+    }
+  ],
+  "basins": [
+    {
+      "task": 1,
+      "basin": "EP",
+      "count": 2430,
+      "value": 8.402171775441111,
+      "baseline": 12.707818930041153
+    },
+    {
+      "task": 1,
+      "basin": "NA",
+      "count": 2971,
+      "value": 9.012036827829542,
+      "baseline": 11.746886570178392
+    },
+    {
+      "task": 1,
+      "basin": "NI",
+      "count": 540,
+      "value": 10.049537997775607,
+      "baseline": 15.25
+    },
+    {
+      "task": 1,
+      "basin": "SI",
+      "count": 2636,
+      "value": 10.217900570679868,
+      "baseline": 12.830045523520486
+    },
+    {
+      "task": 1,
+      "basin": "SP",
+      "count": 1000,
+      "value": 9.997292860031127,
+      "baseline": 13.62
+    },
+    {
+      "task": 1,
+      "basin": "WP",
+      "count": 3035,
+      "value": 10.323105473023466,
+      "baseline": 15.28500823723229
+    },
+    {
+      "task": 2,
+      "basin": "EP",
+      "count": 2447,
+      "value": 122.44408404885915,
+      "baseline": 140.2736220639396
+    },
+    {
+      "task": 2,
+      "basin": "NA",
+      "count": 2971,
+      "value": 202.6937762128188,
+      "baseline": 239.76482378878345
+    },
+    {
+      "task": 2,
+      "basin": "NI",
+      "count": 768,
+      "value": 144.0965468359059,
+      "baseline": 172.8632604697217
+    },
+    {
+      "task": 2,
+      "basin": "SI",
+      "count": 3444,
+      "value": 181.17119523543917,
+      "baseline": 197.76920499505565
+    },
+    {
+      "task": 2,
+      "basin": "SP",
+      "count": 1286,
+      "value": 214.11541038093085,
+      "baseline": 230.21270884422646
+    },
+    {
+      "task": 2,
+      "basin": "WP",
+      "count": 3919,
+      "value": 199.6188352243341,
+      "baseline": 236.43713007029487
+    },
+    {
+      "task": 3,
+      "basin": "EP",
+      "count": 2430,
+      "accuracy": 0.7008230452674897,
+      "macro_f1": 0.7025960064278878
+    },
+    {
+      "task": 3,
+      "basin": "NA",
+      "count": 2971,
+      "accuracy": 0.6253786603837092,
+      "macro_f1": 0.618792779172901
+    },
+    {
+      "task": 3,
+      "basin": "NI",
+      "count": 540,
+      "accuracy": 0.5962962962962963,
+      "macro_f1": 0.5959941760531597
+    },
+    {
+      "task": 3,
+      "basin": "SI",
+      "count": 2636,
+      "accuracy": 0.6066009104704098,
+      "macro_f1": 0.6066046418711649
+    },
+    {
+      "task": 3,
+      "basin": "SP",
+      "count": 1000,
+      "accuracy": 0.641,
+      "macro_f1": 0.6383811774382049
+    },
+    {
+      "task": 3,
+      "basin": "WP",
+      "count": 3035,
+      "accuracy": 0.6441515650741351,
+      "macro_f1": 0.6415885023215148
+    }
+  ],
+  "split_checks": {
+    "1": {
+      "disjoint_storm_ids": true,
+      "test_storms": 519
+    },
+    "2": {
+      "disjoint_storm_ids": true,
+      "test_storms": 581
+    },
+    "3": {
+      "disjoint_storm_ids": true,
+      "test_storms": 517
+    }
+  },
+  "development": {
+    "labels": [
+      "Strengthening",
+      "Stable",
+      "Weakening"
+    ],
+    "confusion_matrix": [
+      [
+        2751,
+        1051,
+        309
+      ],
+      [
+        1429,
+        3059,
+        721
+      ],
+      [
+        391,
+        633,
+        2268
+      ]
+    ],
+    "classification_report": {
+      "Strengthening": {
+        "precision": 0.6018376722817764,
+        "recall": 0.6691802481148139,
+        "f1-score": 0.6337249481686248,
+        "support": 4111.0
+      },
+      "Stable": {
+        "precision": 0.6449504532995994,
+        "recall": 0.5872528316375504,
+        "f1-score": 0.6147508038585209,
+        "support": 5209.0
+      },
+      "Weakening": {
+        "precision": 0.687689508793208,
+        "recall": 0.6889428918590522,
+        "f1-score": 0.6883156297420334,
+        "support": 3292.0
+      },
+      "accuracy": 0.6405011100539169,
+      "macro avg": {
+        "precision": 0.6448258781248614,
+        "recall": 0.6484586572038055,
+        "f1-score": 0.6455971272563931,
+        "support": 12612.0
+      },
+      "weighted avg": {
+        "precision": 0.6420532385771676,
+        "recall": 0.6405011100539169,
+        "f1-score": 0.640137587403348,
+        "support": 12612.0
+      }
+    },
+    "features": [
+      "CURRENT_USA_WIND",
+      "PAST_USA_WIND_6H",
+      "PAST_USA_WIND_12H",
+      "HAS_PAST_USA_WIND_6H",
+      "HAS_PAST_USA_WIND_12H",
+      "WIND_CHANGE_PAST_6H",
+      "WIND_CHANGE_PAST_12H",
+      "LAT",
+      "LON_NORM",
+      "DIST2LAND",
+      "MONTH_SIN",
+      "MONTH_COS",
+      "HOUR_SIN",
+      "HOUR_COS",
+      "STORM_AGE_HOURS",
+      "WIND_ACCELERATION_6H",
+      "LAND_APPROACH_6H",
+      "PAST_USA_WIND_24H",
+      "HAS_PAST_USA_WIND_24H",
+      "WIND_CHANGE_PAST_24H",
+      "PAST_USA_WIND_36H",
+      "HAS_PAST_USA_WIND_36H",
+      "WIND_CHANGE_PAST_36H",
+      "PAST_USA_WIND_48H",
+      "HAS_PAST_USA_WIND_48H",
+      "WIND_CHANGE_PAST_48H",
+      "CURRENT_USA_PRES",
+      "HAS_CURRENT_USA_PRES",
+      "PAST_USA_PRES_6H",
+      "HAS_PAST_USA_PRES_6H",
+      "PRESSURE_CHANGE_PAST_6H",
+      "PAST_USA_PRES_12H",
+      "HAS_PAST_USA_PRES_12H",
+      "PRESSURE_CHANGE_PAST_12H",
+      "PAST_USA_PRES_24H",
+      "HAS_PAST_USA_PRES_24H",
+      "PRESSURE_CHANGE_PAST_24H",
+      "BASIN",
+      "NATURE"
+    ],
+    "previous_model": {
+      "accuracy": 0.6342372343799556,
+      "macro_f1": 0.6381999614473873
+    }
+  }
+}

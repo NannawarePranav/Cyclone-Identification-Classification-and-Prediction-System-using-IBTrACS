@@ -8,11 +8,22 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
-from dashboard.config import COLORS, ICONS, BASIN_NAMES, NATURE_NAMES
-from dashboard.components import render_header, render_disclaimer, render_metric_card
-from dashboard.data_loader import get_cyclone_catalog, get_observations_for_cyclone
-from dashboard.charts import create_replay_map, DARK_PLOT_LAYOUT
+from dashboard.config import COLORS, ICONS, BASIN_NAMES
+from dashboard.components import (
+    render_header, render_disclaimer, render_metric_card,
+    render_cyclone_selector, SELECTION_STATE_KEY,
+)
+from dashboard.charts import create_replay_map, apply_dark_layout
 from dashboard.inference import calculate_haversine_error_km
+
+
+def _select_replay_step(timestamps, step=None):
+    """Commit playback actions before widgets render, keeping all pages in sync."""
+    if step is None:
+        step = st.session_state['replay_step']
+    selection = dict(st.session_state[SELECTION_STATE_KEY])
+    selection['timestamp'] = timestamps[step]
+    st.session_state[SELECTION_STATE_KEY] = selection
 
 
 def render_page() -> None:
@@ -24,85 +35,11 @@ def render_page() -> None:
     )
     render_disclaimer()
 
-    # 1. Storm Selection Filter
-    with st.expander("Filter & Select Cyclone Track for Replay", expanded=True):
-        catalog = get_cyclone_catalog('movement')
-
-        col1, col2, col3 = st.columns([1.2, 1.2, 1.6])
-        available_basins = sorted(catalog['BASIN'].dropna().unique().tolist())
-        basin_options = ['ALL'] + available_basins
-        basin_labels = {b: (f"{b} — {BASIN_NAMES.get(b, b)}" if b != 'ALL' else "All Oceanic Basins") for b in basin_options}
-
-        with col1:
-            selected_basin = st.selectbox(
-                "Oceanic Basin",
-                options=basin_options,
-                format_func=lambda b: basin_labels.get(b, b),
-                key="replay_basin"
-            )
-
-        min_season = int(catalog['SEASON'].min())
-        max_season = int(catalog['SEASON'].max())
-        with col2:
-            season_range = st.slider(
-                "Season Range (Years)",
-                min_value=min_season,
-                max_value=max_season,
-                value=(max(min_season, 2018), max_season),
-                key="replay_season"
-            )
-
-        with col3:
-            split_choice = st.selectbox(
-                "Data Partition",
-                options=['ALL', 'TEST (2020+)', 'VAL (2015–2019)', 'TRAIN (1970–2014)'],
-                index=0,
-                key="replay_split"
-            )
-
-        filtered = catalog.copy()
-        if selected_basin != 'ALL':
-            filtered = filtered[filtered['BASIN'] == selected_basin]
-
-        filtered = filtered[
-            (filtered['SEASON'] >= season_range[0]) &
-            (filtered['SEASON'] <= season_range[1])
-        ]
-        if split_choice.startswith('TEST'):
-            filtered = filtered[filtered['SPLIT'] == 'TEST']
-        elif split_choice.startswith('VAL'):
-            filtered = filtered[filtered['SPLIT'] == 'VAL']
-        elif split_choice.startswith('TRAIN'):
-            filtered = filtered[filtered['SPLIT'] == 'TRAIN']
-
-        if filtered.empty:
-            st.warning("No cyclones match the criteria. Please widen your search.")
-            return
-
-        def format_cyclone(sid: str) -> str:
-            r = filtered[filtered['SID'] == sid].iloc[0]
-            basin = r['BASIN']
-            season = r['SEASON']
-            obs = r['OBS_COUNT']
-            peak = f"{int(r['PEAK_WIND_KTS'])} kt" if 'PEAK_WIND_KTS' in r and pd.notna(r['PEAK_WIND_KTS']) else ""
-            peak_str = f" | Peak: {peak}" if peak else ""
-            return f"{sid} — {season} {basin} ({obs} obs{peak_str})"
-
-        selected_sid = st.selectbox(
-            f"Select Tropical Cyclone Track (Total: {len(filtered):,})",
-            options=filtered['SID'].tolist(),
-            format_func=format_cyclone,
-            key="replay_sid_select"
-        )
-
-    if not selected_sid:
+    # Use the same filters, storm and observation as the three model pages.
+    selected_sid, track_df, selected_row = render_cyclone_selector('movement', 'replay')
+    if selected_row is None:
         return
-
-    # 2. Load Deduplicated Physical Storm Track
-    track_df = get_observations_for_cyclone(selected_sid, dataset_type='movement')
-    if track_df.empty:
-        st.error(f"No trajectory observations available for storm SID {selected_sid}")
-        return
+    track_df = track_df.copy()
 
     # Ensure strictly sorted chronological physical observations with no duplicate timestamps
     track_df['ISO_TIME'] = pd.to_datetime(track_df['ISO_TIME'])
@@ -188,32 +125,29 @@ def render_page() -> None:
         """
     )
 
+    timestamps = pd.to_datetime(track_df['ISO_TIME'], utc=True).map(lambda t: t.isoformat()).tolist()
+    selected_time = pd.to_datetime(selected_row['ISO_TIME'], utc=True).isoformat()
+    current_step = timestamps.index(selected_time)
+    st.session_state['replay_step'] = current_step
     ctrl_col, slider_col = st.columns([1, 4])
 
     with ctrl_col:
         st.write("")
         b_prev, b_next = st.columns(2)
-        step_state_key = f"step_idx_{selected_sid}"
-        if step_state_key not in st.session_state:
-            st.session_state[step_state_key] = 0
-
         with b_prev:
-            if st.button("< Prev", width="stretch"):
-                st.session_state[step_state_key] = max(0, st.session_state[step_state_key] - 1)
+            st.button("< Prev", width="stretch", disabled=current_step == 0,
+                      on_click=_select_replay_step, args=(timestamps, max(0, current_step - 1)))
         with b_next:
-            if st.button("Next >", width="stretch"):
-                st.session_state[step_state_key] = min(total_steps - 1, st.session_state[step_state_key] + 1)
+            st.button("Next >", width="stretch", disabled=current_step == total_steps - 1,
+                      on_click=_select_replay_step, args=(timestamps, min(total_steps - 1, current_step + 1)))
 
     with slider_col:
-        current_step = st.slider(
-            "Observation Step (Chronological)",
-            min_value=0,
-            max_value=total_steps - 1,
-            value=st.session_state[step_state_key],
-            format="Step %d",
-            key=f"slider_{selected_sid}"
-        )
-        st.session_state[step_state_key] = current_step
+        if total_steps > 1:
+            st.slider("Observation Step (Chronological)", min_value=0, max_value=total_steps - 1,
+                      format="Step %d", key='replay_step',
+                      on_change=_select_replay_step, args=(timestamps,))
+        else:
+            st.caption("Single recorded observation (Step 0).")
 
     curr_point = track_df.iloc[current_step]
 
@@ -228,7 +162,7 @@ def render_page() -> None:
     # 5. Interactive Replay Map
     st.html("<div style='margin-top: 0.75rem;'></div>")
     replay_fig = create_replay_map(track_df, current_step)
-    st.plotly_chart(replay_fig, width="stretch")
+    st.plotly_chart(replay_fig, width="stretch", theme=None)
 
     # 6. Storm Intensity Profile Evolution Chart
     st.html("<div style='margin-top: 1.25rem;'></div>")
@@ -266,14 +200,14 @@ def render_page() -> None:
             textfont=dict(family="Fira Code", color=COLORS['accent_amber'], size=12)
         ))
 
-        wind_fig.update_layout(
-            **DARK_PLOT_LAYOUT,
+        apply_dark_layout(
+            wind_fig,
             height=280,
             xaxis=dict(title="Track Step Number", tickmode='linear', dtick=max(1, total_steps // 10)),
             yaxis=dict(title="USA Sustained Wind (knots)"),
             showlegend=True
         )
-        st.plotly_chart(wind_fig, width="stretch")
+        st.plotly_chart(wind_fig, width="stretch", theme=None)
 
     # 7. Complete Historical Track Table
     with st.expander(f"Inspect Complete Historical Track Data ({total_steps} Observations)", expanded=False):

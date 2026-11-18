@@ -299,7 +299,8 @@ def validate_all_models(
         test_data_cache[f'm2_{h}h'] = sub.head(n_smoke_samples).copy()
 
     # Model 3 dataset
-    df3 = pd.read_parquet(os.path.join('processed', 'model3_development.parquet'))
+    enriched_path = os.path.join('processed', 'model3_development_enriched.parquet')
+    df3 = pd.read_parquet(enriched_path if os.path.exists(enriched_path) else os.path.join('processed', 'model3_development.parquet'))
     df3_test = compute_cyclical_features(df3[df3['SPLIT'] == 'test'].copy())
     for col in ['CURRENT_USA_WIND', 'PAST_USA_WIND_6H', 'PAST_USA_WIND_12H',
                 'HAS_PAST_USA_WIND_6H', 'HAS_PAST_USA_WIND_12H',

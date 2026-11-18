@@ -160,10 +160,14 @@ def run_development_forecast(obs: Union[pd.Series, pd.DataFrame]) -> Dict[str, A
         if col in row_df.columns:
             row_df[col] = row_df[col].astype(np.float64)
 
-    X_input = row_df[M3_NUM_FEATURES + M3_CAT_FEATURES]
     current_wind = float(row_df['CURRENT_USA_WIND'].values[0])
 
     model = load_development_model()
+    features = list(model.feature_names_in_)
+    missing = set(features) - set(row_df.columns)
+    if missing:
+        raise ValueError(f"Development input is missing required features: {sorted(missing)}")
+    X_input = row_df[features]
     pred_label = str(model.predict(X_input)[0])
 
     # Class probabilities

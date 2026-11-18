@@ -22,7 +22,6 @@ from cyclone_ml import CycloneClassifier
 MODELS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'models', 'xgboost'))
 
 
-@st.cache_resource(show_spinner=False)
 def load_intensity_model(horizon_hours: int):
     """
     Loads and caches an XGBoost Intensity regression pipeline (+6h, +12h, or +24h).
@@ -31,10 +30,9 @@ def load_intensity_model(horizon_hours: int):
     path = os.path.join(MODELS_DIR, filename)
     if not os.path.exists(path):
         raise FileNotFoundError(f"Model artifact not found: {path}")
-    return joblib.load(path)
+    return _load_version(path, os.stat(path).st_mtime_ns, os.stat(path).st_size)
 
 
-@st.cache_resource(show_spinner=False)
 def load_movement_model(horizon_hours: int):
     """
     Loads and caches an XGBoost Movement multi-output regression pipeline (+6h, +12h, or +24h).
@@ -43,10 +41,9 @@ def load_movement_model(horizon_hours: int):
     path = os.path.join(MODELS_DIR, filename)
     if not os.path.exists(path):
         raise FileNotFoundError(f"Model artifact not found: {path}")
-    return joblib.load(path)
+    return _load_version(path, os.stat(path).st_mtime_ns, os.stat(path).st_size)
 
 
-@st.cache_resource(show_spinner=False)
 def load_development_model():
     """
     Loads and caches the XGBoost Development Pattern multi-class classification pipeline (+24h).
@@ -55,6 +52,12 @@ def load_development_model():
     path = os.path.join(MODELS_DIR, filename)
     if not os.path.exists(path):
         raise FileNotFoundError(f"Model artifact not found: {path}")
+    return _load_version(path, os.stat(path).st_mtime_ns, os.stat(path).st_size)
+
+
+@st.cache_resource(show_spinner=False)
+def _load_version(path, modified_ns, size):
+    """Invalidate the serving cache when a model file is replaced."""
     return joblib.load(path)
 
 

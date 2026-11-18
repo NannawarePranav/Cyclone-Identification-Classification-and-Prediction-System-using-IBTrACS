@@ -5,8 +5,9 @@ High-level meteorological intelligence, historical distributions, and system arc
 
 import streamlit as st
 import pandas as pd
-from dashboard.config import COLORS, ICONS
-from dashboard.components import render_header, render_disclaimer, render_metric_card
+from dashboard.config import COLORS, ICONS, APP_NAME
+from dashboard.components import render_header, render_disclaimer, render_metric_card, render_pipeline_diagram
+from dashboard.benchmarks import load_benchmarks
 from dashboard.data_loader import get_global_summary_stats, load_movement_dataset
 from dashboard.charts import (
     create_global_activity_map,
@@ -21,11 +22,32 @@ def render_page() -> None:
     stats = get_global_summary_stats()
 
     render_header(
-        title="Cyclone Atlas — Global Activity Overview",
-        subtitle=f"NOAA IBTrACS v04r01 ({stats['season_range']}) Global Meteorological Intelligence & Multitask AI Architecture",
+        title=APP_NAME,
+        subtitle="How strong will a cyclone become, where will it move, and how will it develop?",
         page_badge="IBTrACS v04r01"
     )
     render_disclaimer()
+    with st.expander('How predictions work'):
+        render_pipeline_diagram()
+
+    st.markdown("**Explore the three prediction tasks**")
+    tasks = [
+        ("Model 1 · Intensity", "Predict wind speed at +6, +12 and +24 hours.", "Intensity Forecast (Model 1)"),
+        ("Model 2 · Movement", "Predict the next positions on the cyclone track.", "Movement & Trajectory (Model 2)"),
+        ("Model 3 · Development", "Classify strengthening, stable or weakening at +24 hours.", "Development Classification (Model 3)"),
+    ]
+    def open_task(page):
+        st.session_state["navigation"] = page
+
+    for column, (label, description, page) in zip(st.columns(3), tasks):
+        with column:
+            with st.container(border=True):
+                st.markdown(f"**{label}**")
+                st.caption(description)
+                st.button("Open " + label.split(" · ")[1], key=page, on_click=open_task,
+                          args=(page,), width="stretch")
+
+    st.caption("Demo flow: select a cyclone → choose an observation → generate a prediction → compare with the recorded outcome.")
 
     c1, c2, c3, c4 = st.columns(4)
 
@@ -161,11 +183,12 @@ def render_page() -> None:
         )
 
     with col_m3:
+        development_metrics = next(r for r in load_benchmarks()['records'] if r['task'] == 3)
         st.html(
             f"""
             <div class="kpi-card" style="border-top: 3px solid {COLORS['accent_amber']};">
                 <div style="font-size: 0.85rem; font-weight: 700; color: {COLORS['accent_amber']}; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
-                    {ICONS['activity']} MODEL 3: DEVELOPMENT REGIME
+                    {ICONS['activity']} MODEL 3: DEVELOPMENT CLASSIFICATION
                 </div>
                 <div style="font-size: 0.82rem; color: {COLORS['text_secondary']}; line-height: 1.55;">
                     Multiclass classification predicting tropical cyclone evolutionary state over the subsequent 24-hour window: <strong>Strengthening, Stable, or Weakening</strong>.
@@ -174,7 +197,7 @@ def render_page() -> None:
                 <div style="font-size: 0.75rem; color: {COLORS['text_muted']};">
                     <strong>Temporal Cohort:</strong> TRAIN 1980–2014 | VAL 2015–2019 | TEST 2020+.<br>
                     <strong>Thresholds:</strong> Strengthening (Δ ≥ +10 kt), Weakening (Δ ≤ -10 kt), Stable (|Δ| < 10 kt).<br>
-                    <strong>Test Performance:</strong> Accuracy (63.42%), Macro F1 (0.638).
+                    <strong>Test Performance:</strong> Accuracy ({development_metrics['value']:.2f}%), Macro F1 ({development_metrics['macro_f1']:.3f}).
                 </div>
             </div>
             """

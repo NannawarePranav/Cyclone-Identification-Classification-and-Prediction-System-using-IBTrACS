@@ -1,4 +1,6 @@
-# PREDICTION OF DIFFERENT TROPICAL CYCLONE PATTERNS USING NOAA IBTrACS
+# PREDICTION OF DIFFERENT TROPICAL CYCLONE PATTERNS
+
+> **Implementation update (17 November 2026):** The selected development classifier now achieves **64.05% test accuracy and 0.646 macro-F1**. Experimental tables below document the earlier baseline study; see [the upgrade report](reports/development_upgrade.md) for the current experiment, feature set, validation method and dashboard additions.
 
 ## A Machine Learning Approach for Cyclone Intensity Forecasting, Track Movement Prediction, and 24-Hour Development Classification
 
@@ -177,7 +179,7 @@ The predicted displacement is converted into a future geographic position `(LAT_
 
 Horizons: **+6 hours, +12 hours, +24 hours**.
 
-### Model 3 — Development Pattern Classification
+### Model 3 — Development Classification
 
 Calculate the 24-hour wind change:
 

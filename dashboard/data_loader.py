@@ -67,13 +67,18 @@ def load_movement_dataset() -> pd.DataFrame:
     return compute_cyclical_features(df)
 
 
-@st.cache_data(show_spinner="Loading development dataset...")
 def load_development_dataset() -> pd.DataFrame:
     """Loads and caches the clean processed Model 3 development dataset."""
-    filepath = os.path.join(DATA_DIR, "model3_development.parquet")
+    enriched = os.path.join(DATA_DIR, "model3_development_enriched.parquet")
+    filepath = enriched if os.path.exists(enriched) else os.path.join(DATA_DIR, "model3_development.parquet")
     if not os.path.exists(filepath):
         st.error(f"Missing required dataset: {filepath}")
         st.stop()
+    return _load_development_version(filepath, os.stat(filepath).st_mtime_ns)
+
+
+@st.cache_data(show_spinner="Loading development dataset...")
+def _load_development_version(filepath, version):
     df = pd.read_parquet(filepath)
     num_cols = [
         'CURRENT_USA_WIND', 'PAST_USA_WIND_6H', 'PAST_USA_WIND_12H',
@@ -87,6 +92,14 @@ def load_development_dataset() -> pd.DataFrame:
     if 'SPLIT' in df.columns:
         df['SPLIT'] = df['SPLIT'].astype(str).str.upper()
     return compute_cyclical_features(df)
+
+
+@st.cache_data(show_spinner=False)
+def load_cyclone_names() -> Dict[str, str]:
+    path = os.path.join(DATA_DIR, 'cyclone_names.csv')
+    if not os.path.exists(path):
+        return {}
+    return pd.read_csv(path, keep_default_na=False).set_index('SID')['NAME'].to_dict()
 
 
 @st.cache_data(show_spinner=False)
@@ -171,6 +184,7 @@ def get_cyclone_catalog(dataset_type: str = 'movement') -> pd.DataFrame:
         rename_cols['CURRENT_USA_WIND_max'] = 'PEAK_WIND_KTS'
 
     catalog = catalog.rename(columns=rename_cols)
+    catalog['NAME'] = catalog.SID.map(load_cyclone_names()).fillna('Unnamed cyclone')
     catalog['SEASON'] = catalog['SEASON'].astype(int)
     catalog = catalog.sort_values(by=['SEASON', 'START_TIME'], ascending=[False, False])
     return catalog

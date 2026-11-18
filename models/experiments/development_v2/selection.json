@@ -1,0 +1,107 @@
+{
+  "created_utc": "2026-11-17T16:44:29.026112+00:00",
+  "incumbent": {
+    "validation": {
+      "accuracy": 0.6479071954851857,
+      "macro_f1": 0.6525292812973982
+    },
+    "selection": {
+      "accuracy": 0.6403248678612866,
+      "macro_f1": 0.6457781549163193
+    },
+    "yearly": {
+      "2015": {
+        "accuracy": 0.6776951672862453,
+        "macro_f1": 0.6812227387834205
+      },
+      "2016": {
+        "accuracy": 0.6386845521419299,
+        "macro_f1": 0.6418077179705776
+      },
+      "2017": {
+        "accuracy": 0.6020761245674741,
+        "macro_f1": 0.6070552023780363
+      },
+      "2018": {
+        "accuracy": 0.6624181880812953,
+        "macro_f1": 0.6664912905770065
+      },
+      "2019": {
+        "accuracy": 0.6450017661603673,
+        "macro_f1": 0.6513008232959522
+      }
+    }
+  },
+  "selected": {
+    "trial": 3,
+    "features": "history_pressure",
+    "parameters": {
+      "max_depth": 5,
+      "learning_rate": 0.03,
+      "min_child_weight": 1,
+      "subsample": 1.0,
+      "colsample_bytree": 0.8,
+      "reg_lambda": 10.0
+    },
+    "trees": 671,
+    "selection": {
+      "accuracy": 0.6591465772850329,
+      "macro_f1": 0.663043686088055
+    },
+    "validation": {
+      "accuracy": 0.6607618749020222,
+      "macro_f1": 0.6643077379810206
+    },
+    "yearly": {
+      "2015": {
+        "accuracy": 0.6862453531598512,
+        "macro_f1": 0.6889574940661483
+      },
+      "2016": {
+        "accuracy": 0.6365209865858935,
+        "macro_f1": 0.6397156241228629
+      },
+      "2017": {
+        "accuracy": 0.6282748393475037,
+        "macro_f1": 0.6321351864387327
+      },
+      "2018": {
+        "accuracy": 0.6782638649672752,
+        "macro_f1": 0.6813701571865263
+      },
+      "2019": {
+        "accuracy": 0.6616036736135641,
+        "macro_f1": 0.6651153985705015
+      }
+    },
+    "selection_year_mean_f1": 0.6595402473985869
+  },
+  "coverage": {
+    "test": {
+      "CURRENT_USA_PRES": 0.9998414208690136,
+      "PAST_USA_WIND_24H": 0.8376149698699651,
+      "PAST_USA_WIND_48H": 0.6830796067237551
+    },
+    "train": {
+      "CURRENT_USA_PRES": 0.4907903609326756,
+      "PAST_USA_WIND_24H": 0.8424010126462481,
+      "PAST_USA_WIND_48H": 0.6952715571802061
+    },
+    "val": {
+      "CURRENT_USA_PRES": 0.9994513246590375,
+      "PAST_USA_WIND_24H": 0.844724878507603,
+      "PAST_USA_WIND_48H": 0.699639441918796
+    }
+  },
+  "trial_count": 27,
+  "protocol": "TRAIN <=2014; early stopping VAL 2015-2016; selection mean yearly macro-F1 2017-2019, with non-decreasing validation accuracy; TEST evaluated only after selection. A candidate replaces the current leader only with >0.002 additional mean yearly macro-F1; validation accuracy must not decrease.",
+  "test_caveat": "The existing test set was previously reported; this is a follow-up evaluation, not a new blind holdout.",
+  "test": {
+    "accuracy": 0.6405011100539169,
+    "macro_f1": 0.6455971272563931
+  },
+  "incumbent_test": {
+    "accuracy": 0.6342372343799556,
+    "macro_f1": 0.6381999614473873
+  }
+}

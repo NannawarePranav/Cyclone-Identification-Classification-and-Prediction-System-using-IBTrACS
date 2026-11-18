@@ -15,16 +15,19 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 import streamlit as st
+from dashboard.config import APP_NAME
 
 # Configure page settings before any other Streamlit commands
 st.set_page_config(
-    page_title="Cyclone Atlas — Tropical Cyclone Intelligence",
+    page_title=APP_NAME,
     page_icon="🌀",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 from dashboard.config import apply_custom_css, COLORS, ICONS, APP_NAME, APP_SUBTITLE, APP_DISCLAIMER
+from dashboard.components import SELECTION_STATE_KEY
+from dashboard.data_loader import load_cyclone_names
 from dashboard.model_loader import check_all_models_present
 import dashboard.pages.overview as pg_overview
 import dashboard.pages.intensity as pg_intensity
@@ -32,6 +35,7 @@ import dashboard.pages.movement as pg_movement
 import dashboard.pages.development as pg_development
 import dashboard.pages.historical_replay as pg_replay
 import dashboard.pages.model_performance as pg_performance
+import dashboard.pages.guided_demo as pg_demo
 
 
 def main():
@@ -49,7 +53,7 @@ def main():
                         <span style="color: {COLORS['accent_cyan']};">{ICONS['globe']}</span>
                     </div>
                     <div>
-                        <div style="font-size: 1.2rem; font-weight: 700; color: {COLORS['text_bright']}; font-family: 'Space Grotesk', 'Inter', sans-serif; letter-spacing: -0.02em;">
+                        <div style="font-size: 1.05rem; line-height: 1.4; font-weight: 700; color: {COLORS['text_bright']}; font-family: 'Fira Sans', sans-serif; letter-spacing: -0.02em;">
                             {APP_NAME}
                         </div>
                         <div style="font-size: 0.72rem; color: {COLORS['text_muted']};">
@@ -68,7 +72,8 @@ def main():
             "Movement & Trajectory (Model 2)",
             "Development Classification (Model 3)",
             "Historical Cyclone Replay",
-            "Model Performance & Benchmarks"
+            "Model Performance & Benchmarks",
+            "Guided Presentation Demo"
         ]
 
         nav_icons = {
@@ -84,8 +89,10 @@ def main():
             "Navigation",
             options=nav_options,
             index=0,
+            key="navigation",
             label_visibility="collapsed"
         )
+        shared_selection_panel = st.empty()
 
         st.html("<div style='margin-top: 1.5rem;'></div>")
 
@@ -118,8 +125,8 @@ def main():
         st.html(
             f"""
             <div style="font-size: 0.72rem; color: {COLORS['text_dim']}; line-height: 1.45; border-top: 1px solid {COLORS['border_dark']}; padding-top: 1rem;">
-                <strong style="color: {COLORS['text_muted']};">Research Prototype:</strong><br>
-                This application is designed for college-level research and AI demonstration using historical IBTrACS best-track data. It does not provide real-time operational weather warnings.
+                <strong style="color: {COLORS['text_muted']};">BTech Project · Semester VII</strong><br>
+                Three prediction tasks powered by NOAA IBTrACS data and XGBoost.
             </div>
             """
         )
@@ -137,6 +144,28 @@ def main():
         pg_replay.render_page()
     elif selected_page == "Model Performance & Benchmarks":
         pg_performance.render_page()
+    elif selected_page == "Guided Presentation Demo":
+        pg_demo.render_page()
+
+    # Populate after the page so newly selected defaults appear immediately.
+    with shared_selection_panel.container():
+        with st.expander('Shared cyclone selection', expanded=True):
+            selection = st.session_state.get(SELECTION_STATE_KEY, {})
+            sid = selection.get('sid')
+            if sid:
+                st.write(f"**{load_cyclone_names().get(sid, sid)}**")
+                st.caption(sid)
+                timestamp = selection.get('timestamp')
+                st.caption(timestamp.replace('T', ' ').replace('+00:00', ' UTC') if timestamp else 'Choose an observation')
+                season = selection['season']
+                st.caption(f"{selection['basin']} basin · {season[0]}–{season[1]} · {selection['split']}")
+                if selection.get('search'):
+                    st.caption('Search: ' + selection['search'])
+            else:
+                st.caption('Select a cyclone on any model, replay or guided demo page.')
+            st.caption('Shared by all three models, Historical Replay and Guided Demo. Your selection is retained on every page.')
+            if selected_page in ('Overview & Global Activity', 'Model Performance & Benchmarks'):
+                st.caption('This page shows global results; the shared selection does not filter its totals.')
 
 
 if __name__ == "__main__":

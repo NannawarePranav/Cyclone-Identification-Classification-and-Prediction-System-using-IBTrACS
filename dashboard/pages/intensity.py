@@ -17,6 +17,7 @@ from dashboard.components import (
 from dashboard.inference import run_intensity_forecast
 from dashboard.data_loader import get_horizon_targets_for_observation
 from dashboard.charts import create_intensity_forecast_chart
+from dashboard.error_display import format_error
 
 
 def render_page() -> None:
@@ -110,7 +111,7 @@ def render_page() -> None:
             if h in horizon_targets:
                 gt_val = horizon_targets[h]['target_wind_kts'] if unit == "knots" else horizon_targets[h]['target_wind_kmh']
                 abs_err = abs(pred_v - gt_val)
-                subvalue = f"Ground Truth: {gt_val:.1f} {unit_suffix} | Absolute Error: {abs_err:.1f} {unit_suffix}"
+                subvalue = f"Ground Truth: {gt_val:.1f} {unit_suffix} | Absolute Error: {format_error(abs_err, gt_val, unit_suffix)}"
             else:
                 subvalue = f"Ground Truth: Unavailable (+{h}h beyond recorded track)"
 
@@ -123,6 +124,8 @@ def render_page() -> None:
                     color_accent=color,
                     icon_key="wind"
                 )
+
+        st.caption("Error % = absolute error ÷ observed future wind speed × 100. N/A% when the observed wind is zero or unavailable.")
 
         # 5. Forecast Trajectory Plot
         st.html("<div style='margin-top: 1.5rem;'></div>")
@@ -143,7 +146,7 @@ def render_page() -> None:
             past_winds=past_winds,
             unit=unit
         )
-        st.plotly_chart(fig_int, width="stretch")
+        st.plotly_chart(fig_int, width="stretch", theme=None)
 
         # 6. Model Inputs Inspection Accordion
         with st.expander("Inspect Model Input Features & Preprocessing State", expanded=False):

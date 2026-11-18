@@ -203,27 +203,17 @@ def test_historical_replay_calculations():
 
 def test_basin_scorecards():
     print("\n[TEST 6/7] Testing Exact Basin Scorecard Values...")
-    with open('dashboard/pages/model_performance.py', 'r', encoding='utf-8') as f:
-        text = f.read()
-
-    expected_table = {
-        'EP': {'obs': '2,430', 'pers': '12.71 kt', 'rf': '8.75 kt', 'xgb': '8.40 kt', 'skill': '+33.88%'},
-        'NA': {'obs': '2,971', 'pers': '11.75 kt', 'rf': '9.55 kt', 'xgb': '9.01 kt', 'skill': '+23.28%'},
-        'NI': {'obs': '540', 'pers': '15.25 kt', 'rf': '10.73 kt', 'xgb': '10.05 kt', 'skill': '+34.10%'},
-        'SI': {'obs': '2,636', 'pers': '12.83 kt', 'rf': '10.50 kt', 'xgb': '10.22 kt', 'skill': '+20.36%'},
-        'SP': {'obs': '1,000', 'pers': '13.62 kt', 'rf': '10.68 kt', 'xgb': '10.00 kt', 'skill': '+26.60%'},
-        'WP': {'obs': '3,035', 'pers': '15.29 kt', 'rf': '10.70 kt', 'xgb': '10.32 kt', 'skill': '+32.46%'}
-    }
-
-    for b, vals in expected_table.items():
-        assert b in text, f"Basin code {b} missing from scorecard."
-        for key, val in vals.items():
-            assert val in text, f"Expected {val} for basin {b} ({key}) in model_performance.py"
-        print(f"    --> Basin {b}: Test count={vals['obs']}, Pers={vals['pers']}, RF={vals['rf']}, XGB={vals['xgb']}, Skill={vals['skill']} (Verified)")
-
-    # Assert South Atlantic is not included without reported metrics
-    assert '"Basin": "SA' not in text, "South Atlantic (SA) must not be included without test metrics."
-    print("    --> Basin scorecard matches reports/xgboost_experiment_results.md exactly (Pass)")
+    from dashboard.benchmarks import load_benchmarks
+    results = load_benchmarks()
+    expected = {'EP': (2430,8.40), 'NA':(2971,9.01), 'NI':(540,10.05),
+                'SI':(2636,10.22), 'SP':(1000,10.00), 'WP':(3035,10.32)}
+    actual = {r['basin']:r for r in results['basins'] if r['task']==1}
+    assert set(actual)==set(expected)
+    for basin,(count,mae) in expected.items():
+        assert actual[basin]['count']==count
+        assert abs(actual[basin]['value']-mae)<.01
+    assert sum(r['count'] for r in actual.values()) == next(r['count'] for r in results['records'] if r['task']==1 and r['horizon']==24)
+    print('    --> Saved Model 1 regional metrics match unchanged reference results (Pass)')
 
 
 def test_feature_manifest_leakage_safeguards():
@@ -240,12 +230,14 @@ def test_feature_manifest_leakage_safeguards():
         assert f not in leakage_forbidden, f"Target or identifier leakage found in Model 1 features: {f}"
     for f in M2_NUM_FEATURES + M2_CAT_FEATURES:
         assert f not in leakage_forbidden, f"Target or identifier leakage found in Model 2 features: {f}"
-    for f in M3_NUM_FEATURES + M3_CAT_FEATURES:
+    from dashboard.model_loader import load_development_model
+    active_m3_features = list(load_development_model().feature_names_in_)
+    for f in active_m3_features:
         assert f not in leakage_forbidden, f"Target or identifier leakage found in Model 3 features: {f}"
         
     print(f"    --> Model 1 Features: {len(M1_NUM_FEATURES) + len(M1_CAT_FEATURES)} verified leakage-free")
     print(f"    --> Model 2 Features: {len(M2_NUM_FEATURES) + len(M2_CAT_FEATURES)} verified leakage-free")
-    print(f"    --> Model 3 Features: {len(M3_NUM_FEATURES) + len(M3_CAT_FEATURES)} verified leakage-free (Pass)")
+    print(f"    --> Model 3 Features: {len(active_m3_features)} verified leakage-free (Pass)")
 
 
 def run_all():

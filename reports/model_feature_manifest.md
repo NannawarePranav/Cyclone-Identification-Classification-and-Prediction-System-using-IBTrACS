@@ -280,3 +280,8 @@ Due to the well-balanced nature of the dataset (Stable: 41.71%, Strengthening: 3
 
 ---
 *Manifest document finalized for the Tropical Cyclone Pattern Prediction project.*
+
+
+## Development classifier upgrade (17 November 2026)
+
+The active Model 3 now selects 39 features: the original 16 plus 23 history/pressure features defined in `src/cyclone_ml/development_features.py`. Its exact serving schema is stored in `reports/benchmark_results.json` under `development.features`. Use `processed/model3_development_enriched.parquet`; original feature tables above describe the archived baseline. See `reports/development_upgrade.md` for source matching, missing-value treatment and selection details.

@@ -17,6 +17,8 @@ DARK_PLOT_LAYOUT = dict(
     plot_bgcolor="rgba(0,0,0,0)",
     font=dict(family="Inter, -apple-system, BlinkMacSystemFont, sans-serif", color=COLORS['text_secondary'], size=12),
     margin=dict(l=40, r=20, t=35, b=40),
+    hoverlabel=dict(bgcolor="#0F1A30", bordercolor="#51617D",
+                    font=dict(color="#F8FAFC", size=13), namelength=-1),
     xaxis=dict(
         gridcolor=COLORS['grid_line'],
         zerolinecolor=COLORS['border_dark'],
@@ -39,6 +41,9 @@ DARK_PLOT_LAYOUT = dict(
 def apply_dark_layout(fig: go.Figure, **kwargs) -> go.Figure:
     """Safely merges default dark theme layout tokens with custom overrides."""
     merged = {**DARK_PLOT_LAYOUT, **kwargs}
+    for axis in ('xaxis', 'yaxis'):
+        if axis in kwargs:
+            merged[axis] = {**DARK_PLOT_LAYOUT[axis], **kwargs[axis]}
     fig.update_layout(**merged)
     return fig
 
@@ -225,6 +230,7 @@ def create_intensity_forecast_chart(
             y=past_vals,
             mode='lines+markers',
             name="Past Observed",
+            hovertemplate=f"Observed · %{{x}}h<br>%{{y:.1f}} {u_label}<extra></extra>",
             line=dict(color=COLORS['text_muted'], width=2, dash='dot'),
             marker=dict(size=7, color=COLORS['text_muted'])
         ))
@@ -235,6 +241,7 @@ def create_intensity_forecast_chart(
         y=winds,
         mode='lines',
         name="Forecast Trend",
+        hoverinfo='skip',
         line=dict(color=COLORS['cyan'], width=2.5, dash='dash')
     ))
 
@@ -244,6 +251,7 @@ def create_intensity_forecast_chart(
         y=[winds[0]],
         mode='markers+text',
         name="Current Eye (t=0)",
+        hovertemplate=f"Current eye · t=0<br>%{{y:.1f}} {u_label}<extra></extra>",
         marker=dict(size=12, color='#FFFFFF', line=dict(color=COLORS['cyan'], width=2)),
         text=[f"t=0h: {winds[0]:.1f} {u_label}"],
         textposition="top center",
@@ -258,6 +266,7 @@ def create_intensity_forecast_chart(
             y=[w],
             mode='markers+text',
             name=f"+{h}h Forecast",
+            hovertemplate=f"+{h}h forecast<br>%{{y:.1f}} {u_label}<extra></extra>",
             marker=dict(size=10, color=colors_h[h]),
             text=[f"+{h}h: {w:.1f} {u_label}"],
             textposition="top center",
@@ -266,6 +275,7 @@ def create_intensity_forecast_chart(
 
     apply_dark_layout(fig,
         height=380,
+        hovermode='closest',
         xaxis=dict(
             title="Forecast Lead Time (Hours from t=0)",
             tickvals=[-12, -6, 0, 6, 12, 24] if past_winds else [0, 6, 12, 24],
@@ -493,113 +503,43 @@ def create_replay_map(
     return fig
 
 
-def create_model_performance_charts() -> Tuple[go.Figure, go.Figure, go.Figure]:
-    """
-    Generates academic benchmark comparison figures from reported experiment results
-    (Persistence / Constant-Velocity / Random Forest Baselines vs. XGBoost on 2020+ Test Set).
-    """
-    # 1. Model 1 MAE across horizons
-    horizons = ["+6h", "+12h", "+24h"]
-    pers_mae = [4.02, 7.50, 13.31]
-    rf_mae = [3.52, 5.92, 10.01]
-    xgb_mae = [3.43, 5.71, 9.58]
+def create_model_performance_charts(results=None) -> Tuple[go.Figure, go.Figure, go.Figure]:
+    """Build charts from the same artifact-verified results as the scoreboard."""
+    if results is None:
+        from dashboard.benchmarks import load_benchmarks
+        results = load_benchmarks()
+    figures = []
+    for task in (1, 2, 3):
+        records = [r for r in results['records'] if r['task'] == task]
+        x = [f"+{r['horizon']}h" for r in records]
+        if task == 3:
+            x = ['Accuracy (%)', 'Macro-F1 (%)']
+            model = [records[0]['value'], records[0]['macro_f1']*100]
+            baseline = [records[0]['baseline'], records[0]['baseline_macro_f1']*100]
+        else:
+            model = [r['value'] for r in records]
+            baseline = [r['baseline'] for r in records]
+        fig = go.Figure()
+        fig.add_bar(x=x,y=baseline,name=records[0]['baseline_name'],marker_color='#64748B')
+        fig.add_bar(x=x,y=model,name='Current XGBoost',marker_color=COLORS['cyan'],
+                    text=[f'{v:.2f}' for v in model],textposition='outside')
+        apply_dark_layout(fig,height=350,barmode='group',
+                          title=f"Model {task}: {records[0]['metric']}",
+                          yaxis_title=records[0]['unit'],legend=dict(orientation='h',y=-.25))
+        figures.append(fig)
+    return tuple(figures)
 
-    fig_m1 = go.Figure()
-    fig_m1.add_trace(go.Bar(
-        x=horizons,
-        y=pers_mae,
-        name="Persistence Baseline",
-        marker_color="rgba(100, 116, 139, 0.45)"
-    ))
-    fig_m1.add_trace(go.Bar(
-        x=horizons,
-        y=rf_mae,
-        name="Random Forest (Task 6)",
-        marker_color="rgba(148, 163, 184, 0.75)"
-    ))
-    fig_m1.add_trace(go.Bar(
-        x=horizons,
-        y=xgb_mae,
-        name="XGBRegressor (Task 7)",
-        marker_color=COLORS['cyan'],
-        text=[f"{v:.2f} kt" for v in xgb_mae],
-        textposition='outside',
-        textfont=dict(family="Fira Code", size=10)
-    ))
-    apply_dark_layout(fig_m1,
-        height=320,
-        title="Model 1: Mean Absolute Error (MAE in kt) on Independent Test Set (2020+)",
-        barmode='group',
-        yaxis=dict(title="MAE (knots)")
-    )
 
-    # 2. Model 2 Haversine Error across horizons
-    cv_hav = [38.8, 87.2, 208.4]
-    rf_hav = [37.0, 80.5, 184.1]
-    xgb_hav = [36.6, 79.6, 181.6]
-
-    fig_m2 = go.Figure()
-    fig_m2.add_trace(go.Bar(
-        x=horizons,
-        y=cv_hav,
-        name="Constant-Velocity Baseline",
-        marker_color="rgba(100, 116, 139, 0.45)"
-    ))
-    fig_m2.add_trace(go.Bar(
-        x=horizons,
-        y=rf_hav,
-        name="Random Forest MultiOutput",
-        marker_color="rgba(148, 163, 184, 0.75)"
-    ))
-    fig_m2.add_trace(go.Bar(
-        x=horizons,
-        y=xgb_hav,
-        name="XGBoost MultiOutput",
-        marker_color=COLORS['teal'],
-        text=[f"{v:.1f} km" for v in xgb_hav],
-        textposition='outside',
-        textfont=dict(family="Fira Code", size=10)
-    ))
-    apply_dark_layout(fig_m2,
-        height=320,
-        title="Model 2: Mean Haversine Track Error (km) on Independent Test Set (2020+)",
-        barmode='group',
-        yaxis=dict(title="Track Error (km)")
-    )
-
-    # 3. Model 3 Classification Metrics
-    metrics = ["Overall Accuracy (%)", "Macro F1 Score (x100)"]
-    maj_cls = [41.3, 20.0]
-    rf_cls = [62.71, 63.1]
-    xgb_cls = [63.42, 63.8]
-
-    fig_m3 = go.Figure()
-    fig_m3.add_trace(go.Bar(
-        x=metrics,
-        y=maj_cls,
-        name="Majority Class Baseline",
-        marker_color="rgba(100, 116, 139, 0.45)"
-    ))
-    fig_m3.add_trace(go.Bar(
-        x=metrics,
-        y=rf_cls,
-        name="Random Forest Classifier",
-        marker_color="rgba(148, 163, 184, 0.75)"
-    ))
-    fig_m3.add_trace(go.Bar(
-        x=metrics,
-        y=xgb_cls,
-        name="CycloneClassifier (XGBoost)",
-        marker_color=COLORS['amber'],
-        text=[f"{v:.1f}" for v in xgb_cls],
-        textposition='outside',
-        textfont=dict(family="Fira Code", size=10)
-    ))
-    apply_dark_layout(fig_m3,
-        height=320,
-        title="Model 3: Development Pattern Classification (2020+ Test Set)",
-        barmode='group',
-        yaxis=dict(title="Percentage / Score", range=[0, 75])
-    )
-
-    return fig_m1, fig_m2, fig_m3
+def create_development_confusion(development, percentages=True):
+    counts = np.asarray(development['confusion_matrix'])
+    support = counts.sum(axis=1,keepdims=True)
+    rates = np.divide(counts*100,support,out=np.zeros_like(counts,dtype=float),where=support!=0)
+    text = [[f'{counts[i,j]:,}<br>{rates[i,j]:.1f}%' for j in range(3)] for i in range(3)]
+    fig = go.Figure(go.Heatmap(z=rates if percentages else counts,
+        x=development['labels'],y=development['labels'],text=text,texttemplate='%{text}',
+        colorscale=[[0,'#0F1A30'],[1,'#00D2D3']],
+        colorbar=dict(title='Row %' if percentages else 'Count'),
+        hovertemplate='Actual: %{y}<br>Predicted: %{x}<br>%{text}<extra></extra>'))
+    apply_dark_layout(fig,height=400,xaxis_title='Predicted development',yaxis_title='Actual development',
+                      yaxis=dict(autorange='reversed'),margin=dict(l=95,r=30,t=20,b=65))
+    return fig

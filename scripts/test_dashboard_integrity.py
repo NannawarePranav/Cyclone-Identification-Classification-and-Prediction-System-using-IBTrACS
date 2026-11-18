@@ -225,29 +225,9 @@ def run_checks() -> bool:
         assert df3['SEASON'].min() >= 1980, f"Model 3 expected SEASON >= 1980, got {df3['SEASON'].min()}"
         print(f"    [OK] Model 2 cohort verified at {df2['SEASON'].min()} (earlier historical cohort) vs Model 1 at {df1['SEASON'].min()}")
 
-        # Check Basin Scorecard values in model_performance page
-        import dashboard.pages.model_performance as mp
-        # Inspect defined basin summary data in source
-        with open('dashboard/pages/model_performance.py', 'r', encoding='utf-8') as f:
-            mp_text = f.read()
-
-        expected_values = [
-            ("EP", "2,430", "12.71 kt", "8.75 kt", "8.40 kt", "+33.88%"),
-            ("NA", "2,971", "11.75 kt", "9.55 kt", "9.01 kt", "+23.28%"),
-            ("NI", "540", "15.25 kt", "10.73 kt", "10.05 kt", "+34.10%"),
-            ("SI", "2,636", "12.83 kt", "10.50 kt", "10.22 kt", "+20.36%"),
-            ("SP", "1,000", "13.62 kt", "10.68 kt", "10.00 kt", "+26.60%"),
-            ("WP", "3,035", "15.29 kt", "10.70 kt", "10.32 kt", "+32.46%")
-        ]
-        for basin, obs, pers, rf, xgb, skill in expected_values:
-            assert basin in mp_text, f"Basin {basin} missing from model_performance.py"
-            assert obs in mp_text, f"Observation count {obs} for basin {basin} missing."
-            assert xgb in mp_text, f"XGB MAE {xgb} for basin {basin} missing."
-            assert skill in mp_text, f"Skill {skill} for basin {basin} missing."
-
-        # Verify South Atlantic (SA) is NOT included in the +24h intensity table
-        assert '"Basin": "SA' not in mp_text, "South Atlantic must not be included without reported test metrics."
-        print("    [OK] All 6 regional basin scorecards verified against reports/xgboost_experiment_results.md.")
+        from scripts.test_dashboard_refinements import test_basin_scorecards
+        test_basin_scorecards()
+        print('    [OK] Saved regional benchmark data verified.')
     except Exception as e:
         print(f"    [FAIL] Split definitions or scorecard verification failed: {e}")
         traceback.print_exc()

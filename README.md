@@ -1,6 +1,6 @@
-# Cyclone Identification, Classification, and Prediction System using NOAA IBTrACS
+# Prediction of Different Tropical Cyclone Patterns
 
-An end-to-end, reproducible machine learning system and interactive web dashboard for predicting tropical cyclone intensity, movement trajectory, and 24-hour rapid development patterns across global oceanic basins using the NOAA International Best Track Archive for Climate Stewardship (IBTrACS v04r01).
+An end-to-end, reproducible machine learning system and interactive web dashboard for predicting tropical cyclone intensity, movement trajectory, and 24-hour development classes across global oceanic basins using the NOAA International Best Track Archive for Climate Stewardship (IBTrACS v04r01).
 
 ---
 
@@ -17,15 +17,15 @@ This system formulates and solves three distinct meteorological prediction tasks
    - **Evaluation Metric:** Great-Circle spherical Haversine error in kilometers.
    - **Horizons:** +6 hours, +12 hours, and +24 hours.
    - **Algorithms:** Zero-motion baseline, Constant-velocity baseline, Random Forest Regressor, and MultiOutput XGBoost Regressor.
-3. **Model 3: Development Pattern Classification (Multi-Class Classification)**
-   - **Target:** 24-hour intensification regime (`CLASS_LABEL` $\in$ `['Strengthening', 'Stable', 'Weakening']`) based on operational $\pm 10\text{ knot}$ wind change threshold ($\Delta V_{24h}$).
+3. **Model 3: Development Classification (Multi-Class Classification)**
+   - **Target:** 24-hour development class (`CLASS_LABEL` $\in$ `['Strengthening', 'Stable', 'Weakening']`) based on the project's $\pm 10\text{ knot}$ wind change threshold ($\Delta V_{24h}$).
    - **Algorithms:** Majority-class baseline (`Stable`), Multinomial Logistic Regression, Random Forest Classifier, and Tuned XGBoost Classifier.
 
 ---
 
-## 🌐 Cyclone Atlas Interactive Dashboard
+## 🌐 Interactive Dashboard
 
-The repository features **Cyclone Atlas**, a polished, dark-ocean scientific intelligence dashboard built with Streamlit and Plotly for exploring historical IBTrACS records, running live XGBoost inference, animating storm lifecycles, and reviewing academic benchmark scoreboards.
+The dashboard presents **Prediction of Different Tropical Cyclone Patterns** with Streamlit and Plotly: explore IBTrACS records, generate XGBoost predictions, replay storm lifecycles, and compare models against baseline benchmarks.
 
 ```bash
 # Launch the dashboard locally
@@ -71,7 +71,20 @@ dashboard/
 | **Model 2: Movement** | Haversine Track Error (km) | **+6h** | Const-Vel: 38.8 km | RF: 37.0 km | **36.6 km** | **+5.61%** | +0.97% |
 | **Model 2: Movement** | Haversine Track Error (km) | **+12h** | Const-Vel: 87.2 km | RF: 80.5 km | **79.6 km** | **+8.71%** | +1.20% |
 | **Model 2: Movement** | Haversine Track Error (km) | **+24h** | Const-Vel: 208.4 km | RF: 184.1 km | **181.6 km** | **+12.87%** | +1.35% |
-| **Model 3: Development** | Accuracy / Macro-F1 | **+24h** | Majority: 41.30% | RF: 62.71% (0.631 F1) | **63.42% (0.638 F1)** | **+22.12%** | +0.71% Acc |
+| **Model 3: Development** | Accuracy / Macro-F1 | **+24h** | Majority: 41.30% | RF: 62.71% (0.631 F1) | **64.05% (0.646 F1)** | **+22.75 pp** | +1.34 pp Acc |
+
+Current Model 3 uses longer wind history and pressure features selected on validation data. The archived Random Forest numbers are historical references; the dashboard computes current-model and simple-baseline results from saved artifacts. See [upgrade results](reports/development_upgrade.md) and [machine-readable scores](reports/benchmark_results.json).
+
+### Presentation walkthrough
+Open **Guided Presentation Demo** from the sidebar to select an unseen cyclone, predict, then reveal the recorded outcome. Models 1–3, Historical Replay and Guided Demo share the selected cyclone, UTC observation, basin, seasons, partition and name/ID search. The demo only supports TEST observations with all forecast horizons available; unavailable selections are explained without overwriting the original selection. Overview and benchmarks show global results while preserving the selection, which is visible in the sidebar on every page.
+
+### Updated local workflow
+```bash
+python scripts/export_benchmarks.py
+python scripts/test_development_upgrade.py
+streamlit run app.py
+```
+The dashboard refreshes saved scores when model/data fingerprints change. The original Model 3 is preserved in `models/archive/pre_development_v2/`; the enhanced development inputs are in `processed/model3_development_enriched.parquet`.
 
 ---
 
@@ -144,7 +157,7 @@ Run the automated verification suite to validate all models, data pipelines, and
 python scripts/test_dashboard_integrity.py
 ```
 
-### 3. Launch the Cyclone Atlas Dashboard
+### 3. Launch the Dashboard
 ```bash
 streamlit run app.py
 ```
